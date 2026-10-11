@@ -27,13 +27,16 @@ jobs:
           git clone https://github.com/sierra-research/tau2-bench.git
           git -C tau2-bench checkout "$TAU2_COMMIT"
           cd tau2-bench && uv sync && uv pip install websockets
+      - name: Check the API key is configured
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: test -n "$ANTHROPIC_API_KEY" || { echo "ANTHROPIC_API_KEY secret is not set"; exit 1; }
       - name: Run
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONPATH: ${{ github.workspace }}
         working-directory: tau2-bench
         run: |
-          test -n "$ANTHROPIC_API_KEY" || { echo "ANTHROPIC_API_KEY secret is not set"; exit 1; }
           EXTRA=""
           if [ -n "${{ inputs.num_tasks }}" ]; then EXTRA="--num-tasks ${{ inputs.num_tasks }}"; fi
           uv run python ../scripts/run.py run \
