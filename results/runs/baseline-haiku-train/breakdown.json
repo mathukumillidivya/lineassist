@@ -1,0 +1,72 @@
+{
+  "by_issue": {
+    "mms_issue": [
+      2,
+      33
+    ],
+    "mobile_data_issue": [
+      12,
+      27
+    ],
+    "service_issue": [
+      8,
+      14
+    ]
+  },
+  "by_faults": {
+    "2": [
+      8,
+      15
+    ],
+    "3-4": [
+      11,
+      30
+    ],
+    "5-6": [
+      3,
+      17
+    ],
+    "7+": [
+      0,
+      12
+    ]
+  },
+  "by_persona": {
+    "Easy": [
+      10,
+      24
+    ],
+    "Hard": [
+      4,
+      23
+    ],
+    "None": [
+      8,
+      27
+    ]
+  },
+  "outcomes": {
+    "solved": 22,
+    "handed to a human when the fix was available": 40,
+    "customer left with the problem unresolved": 12
+  },
+  "missed_steps": {
+    "set_network_mode_preference": 8,
+    "toggle_roaming": 14,
+    "refuel_data": 34,
+    "enable_roaming": 19,
+    "disconnect_vpn": 2,
+    "toggle_data_saver_mode": 1,
+    "reset_apn_settings": 10,
+    "transfer_to_human_agents": 1,
+    "send_payment_request": 2,
+    "make_payment": 2,
+    "resume_line": 2,
+    "reboot_device": 7,
+    "reseat_sim_card": 8,
+    "grant_app_permission": 19,
+    "toggle_data": 8,
+    "toggle_wifi_calling": 12,
+    "toggle_airplane_mode": 3
+  }
+}
