@@ -35,7 +35,7 @@ FAULTS = {
 }
 ISSUES = {"service_issue": "No service", "mobile_data_issue": "Mobile data", "mms_issue": "Picture messages"}
 CHECKS = {
-    "assert_service_status": "Phone has service", "assert_mobile_data_status": "Mobile data works",
+    "assert_service_status": "Phone service is in the correct state", "assert_mobile_data_status": "Mobile data works",
     "assert_internet_speed": "Speed test is excellent", "assert_can_send_mms": "Picture messages send",
     "assert_data_refueling_amount": "Correct data top-up applied", "assert_no_overdue_bill": "No overdue bill left",
 }
