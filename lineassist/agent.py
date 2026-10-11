@@ -207,6 +207,8 @@ class LineAssistAgent(LLMConfigMixin, HalfDuplexAgent[State]):
                              "The line is suspended and its contract is still running: look for an overdue bill.")
             parts.append("Roaming is enabled on the line." if data.get("roaming_enabled")
                          else "Roaming is NOT enabled on the line: enable it if the customer is abroad.")
+            parts.append("That is the account side only. If the customer is abroad, data roaming must also be ON in "
+                         "the phone itself: confirm it with check_network_status.")
             if not state.usage_checked:
                 parts.append("Data allowance not checked yet: call get_data_usage for this line.")
             state.facts["line"] = " ".join(parts)

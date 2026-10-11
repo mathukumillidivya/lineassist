@@ -47,8 +47,10 @@ Verify: check_status_bar shows a signal.
    roaming must be on in the phone (check_network_status; toggle_roaming if off).
    Check both, every time.
 2. check_network_status. Mobile data off -> toggle_data.
-3. Data usage against the plan limit. Limit reached -> offer a refuel (2 GB maximum)
-   or a plan change; ask how much, confirm the price, then apply it.
+3. Data usage against the plan limit (get_data_usage). Limit reached -> offer a refuel
+   (2 GB maximum) or a plan change. State the price per GB and ask how many GB they
+   want. Do not suggest an amount or say how much would be "enough": that is the
+   customer's decision. Confirm the price for their amount, then apply exactly that.
 4. check_data_restriction_status. Data Saver on -> toggle_data_saver_mode.
 5. check_vpn_status. VPN connected -> disconnect_vpn.
 6. check_network_mode_preference. 2G or 3G -> set_network_mode_preference to

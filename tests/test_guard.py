@@ -165,6 +165,7 @@ def test_note_flags_a_contract_that_has_ended(monkeypatch):
     note = agent._case_note(state, {"line_id": "L2", "phone_number": "555-000-0002", "status": "Suspended",
                                     "contract_end_date": "2024-12-31", "roaming_enabled": True})
     assert "must not be resumed" in note and "Roaming is enabled" in note
+    assert "check_network_status" in note                      # the phone's own roaming switch still needs checking
 
 
 def test_note_for_a_suspension_that_can_be_lifted(monkeypatch):

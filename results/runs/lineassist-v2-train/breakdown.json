@@ -1,0 +1,59 @@
+{
+  "by_issue": {
+    "mms_issue": [
+      17,
+      33
+    ],
+    "mobile_data_issue": [
+      23,
+      27
+    ],
+    "service_issue": [
+      13,
+      14
+    ]
+  },
+  "by_faults": {
+    "2": [
+      14,
+      15
+    ],
+    "3-4": [
+      27,
+      30
+    ],
+    "5-6": [
+      7,
+      17
+    ],
+    "7+": [
+      5,
+      12
+    ]
+  },
+  "by_persona": {
+    "Easy": [
+      15,
+      24
+    ],
+    "Hard": [
+      19,
+      23
+    ],
+    "None": [
+      19,
+      27
+    ]
+  },
+  "outcomes": {
+    "solved": 53,
+    "handed to a human when the fix was available": 17,
+    "customer left with the problem unresolved": 4
+  },
+  "missed_steps": {
+    "refuel_data": 18,
+    "transfer_to_human_agents": 1,
+    "grant_app_permission": 2,
+    "toggle_roaming": 3
+  }
+}
