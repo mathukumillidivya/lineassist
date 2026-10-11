@@ -55,8 +55,10 @@ def test_justified_transfer_goes_through(monkeypatch):
 
 def test_text_that_announces_a_transfer_is_reviewed(monkeypatch):
     agent, state, calls = make(monkeypatch, [say("I will transfer you to a specialist."), say("Please run run_speed_test")], [BLOCK])
-    msg, _ = agent.generate_next_message(UserMessage(role="user", content="help"), state)
+    msg, state = agent.generate_next_message(UserMessage(role="user", content="help"), state)
     assert "run_speed_test" in msg.content and calls.count("handoff_review") == 1
+    assert "check roaming" in state.system_messages[1].content        # note reaches the agent as an instruction
+    assert [type(m).__name__ for m in state.messages] == ["UserMessage", "AssistantMessage"]   # draft discarded
 
 
 def test_guard_gives_up_after_max_blocks(monkeypatch):
@@ -81,3 +83,61 @@ def test_guard_can_be_switched_off(monkeypatch):
     agent, state, calls = make(monkeypatch, [transfer()], [], guard=False)
     msg, _ = agent.generate_next_message(UserMessage(role="user", content="help"), state)
     assert msg.tool_calls and "handoff_review" not in calls
+
+
+# ---- line check ------------------------------------------------------------------------------
+
+from tau2.data_model.message import ToolMessage
+
+
+def call(name, **args):
+    return AssistantMessage(role="assistant", cost=0.02, tool_calls=[ToolCall(id=f"c-{name}-{args.get('id', args.get('line_id', ''))}", name=name, arguments=args)])
+
+
+def result(msg, content):
+    return ToolMessage(id=msg.tool_calls[0].id, role="tool", requestor="assistant", content=content)
+
+
+CUSTOMER = '{"customer_id": "C1", "line_ids": ["L1", "L2"]}'
+L1 = '{"line_id": "L1", "phone_number": "555-000-0001", "roaming_enabled": false}'
+L2 = '{"line_id": "L2", "phone_number": "555-000-0002", "roaming_enabled": false}'
+
+
+def run_script(monkeypatch, replies, tool_results, **kw):
+    agent, state, calls = make(monkeypatch, replies, [], guard=False, **kw)
+    out, state = agent.generate_next_message(UserMessage(role="user", content="My number is 555-000-0002"), state)
+    sent = [out]
+    for r in tool_results:
+        out, state = agent.generate_next_message(result(out, r), state)
+        sent.append(out)
+    return sent, state
+
+
+def test_action_on_another_line_is_withheld(monkeypatch):
+    lookup, wrong = call("get_customer_by_phone", phone_number="555-000-0002"), call("get_details_by_id", id="L1")
+    sent, state = run_script(monkeypatch, [lookup, wrong, call("enable_roaming", customer_id="C1", line_id="L1"),
+                                           call("get_details_by_id", id="L2")], [CUSTOMER, L1])
+    assert sent[-1].tool_calls[0].arguments == {"id": "L2"}          # the roaming change never left the agent
+    assert state.line_blocks == 1
+    assert "555-000-0001" in state.messages[-2].content and "L2" in state.messages[-2].content
+
+
+def test_action_on_the_matching_line_goes_through(monkeypatch):
+    lookup = call("get_customer_by_phone", phone_number="555-000-0002")
+    sent, state = run_script(monkeypatch, [lookup, call("get_details_by_id", id="L2"),
+                                           call("enable_roaming", customer_id="C1", line_id="L2")], [CUSTOMER, L2])
+    assert sent[-1].tool_calls[0].name == "enable_roaming" and state.line_blocks == 0
+
+
+def test_line_that_was_never_looked_up_is_withheld(monkeypatch):
+    lookup = call("get_customer_by_phone", phone_number="555-000-0002")
+    sent, state = run_script(monkeypatch, [lookup, call("refuel_data", customer_id="C1", line_id="L1", gb_amount=2.0),
+                                           call("get_details_by_id", id="L1")], [CUSTOMER])
+    assert sent[-1].tool_calls[0].name == "get_details_by_id" and state.line_blocks == 1
+
+
+def test_line_check_can_be_switched_off(monkeypatch):
+    lookup = call("get_customer_by_phone", phone_number="555-000-0002")
+    sent, state = run_script(monkeypatch, [lookup, call("refuel_data", customer_id="C1", line_id="L1", gb_amount=2.0)],
+                             [CUSTOMER], line_check=False)
+    assert sent[-1].tool_calls[0].name == "refuel_data"

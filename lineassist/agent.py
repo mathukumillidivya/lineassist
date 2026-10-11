@@ -11,7 +11,12 @@ Two layers on top of a plain tool-calling agent:
    that list. The guard can overrule the agent a limited number of times, so a genuine
    dead end still reaches a human.
 
-Both layers can be switched on separately so their effect can be measured.
+3. Line check. An account can hold several lines. Before any tool call that names a
+   line, the agent must have seen that the line's number is the number the customer
+   gave. This is plain code, not a model call: a call on an unverified or mismatched
+   line is withheld and the agent is told which lines are left to look at.
+
+Each layer can be switched on separately so its effect can be measured.
 """
 from __future__ import annotations
 
@@ -71,10 +76,20 @@ BLOCKED = ("Hand-off not approved by the supervisor. {reason}\nBefore this custo
            "Continue helping the customer now. Do not mention this note or a transfer.")
 
 
+WRONG_LINE = ("Line check failed: {line} {why} The customer's number is {phone}. Do not act on or quote details "
+              "from a line until get_details_by_id shows its phone_number is {phone}.{todo}")
+PHONE = re.compile(r"\b\d{3}[-. ]\d{3}[-. ]\d{4}\b")
+
+
 class State(BaseModel):
     system_messages: list[SystemMessage]
     messages: list[APICompatibleMessage]
     blocks: int = 0
+    caller_phone: Optional[str] = None
+    line_ids: list[str] = []
+    line_phone: dict[str, str] = {}
+    line_blocks: int = 0
+    notes: list[str] = []
     transferred: bool = False
     reviews: list[dict] = []
 
@@ -109,9 +124,10 @@ def parse_review(text: str) -> Optional[dict]:
 
 class LineAssistAgent(LLMConfigMixin, HalfDuplexAgent[State]):
     def __init__(self, tools: list[Tool], domain_policy: str, llm: str, llm_args: Optional[dict] = None,
-                 playbook: bool = True, guard: bool = True, max_blocks: int = 3):
+                 playbook: bool = True, guard: bool = True, line_check: bool = True, max_blocks: int = 3):
         super().__init__(tools=tools, domain_policy=domain_policy, llm=llm, llm_args=llm_args)
         self.use_playbook, self.use_guard, self.max_blocks = playbook, guard, max_blocks
+        self.use_line_check = line_check
 
     @property
     def system_prompt(self) -> str:
@@ -126,6 +142,53 @@ class LineAssistAgent(LLMConfigMixin, HalfDuplexAgent[State]):
     def _call(self, state: State) -> AssistantMessage:
         return generate(model=self.llm, tools=self.tools, messages=state.system_messages + state.messages,
                         call_name="agent_response", **self.llm_args)
+
+    # ---- line check -------------------------------------------------------------------------
+    def _observe(self, state: State, incoming: list) -> None:
+        """Record which phone number the customer gave and which number each line has."""
+        calls = {}
+        for m in reversed(state.messages):
+            if isinstance(m, AssistantMessage) and m.tool_calls:
+                calls = {tc.id: tc for tc in m.tool_calls}
+                break
+        for m in incoming:
+            if isinstance(m, UserMessage) and m.content and state.caller_phone is None:
+                found = PHONE.findall(m.content)
+                if found:
+                    state.caller_phone = re.sub(r"[. ]", "-", found[-1])
+            if not isinstance(m, ToolMessage) or m.error:
+                continue
+            tc = calls.get(m.id)
+            if tc is not None and tc.name == "get_customer_by_phone":
+                state.caller_phone = str(tc.arguments.get("phone_number"))
+            try:
+                data = json.loads(m.content or "")
+            except (TypeError, json.JSONDecodeError):
+                continue
+            if not isinstance(data, dict):
+                continue
+            if isinstance(data.get("line_ids"), list):
+                state.line_ids = [str(x) for x in data["line_ids"]]
+            if data.get("line_id") and data.get("phone_number"):
+                state.line_phone[str(data["line_id"])] = str(data["phone_number"])
+
+    def _wrong_line(self, state: State, reply: AssistantMessage) -> Optional[str]:
+        if state.caller_phone is None:
+            return None
+        for tc in (reply.tool_calls or []):
+            line = tc.arguments.get("line_id")
+            if not line:
+                continue
+            seen = state.line_phone.get(str(line))
+            if seen == state.caller_phone:
+                continue
+            why = f"has the number {seen}." if seen else "has not been looked up yet."
+            left = [x for x in state.line_ids if x not in state.line_phone]
+            match = [k for k, v in state.line_phone.items() if v == state.caller_phone]
+            todo = (f" The matching line is {match[0]}." if match else
+                    f" Lines not yet looked up: {', '.join(left)}." if left else "")
+            return WRONG_LINE.format(line=line, why=why, phone=state.caller_phone, todo=todo)
+        return None
 
     def _is_handoff(self, msg: AssistantMessage) -> bool:
         if any(tc.name == "transfer_to_human_agents" for tc in (msg.tool_calls or [])):
@@ -142,13 +205,23 @@ class LineAssistAgent(LLMConfigMixin, HalfDuplexAgent[State]):
         return parse_review(reply.content), reply.cost or 0.0
 
     def generate_next_message(self, message: ValidAgentInputMessage, state: State) -> tuple[AssistantMessage, State]:
-        if isinstance(message, MultiToolMessage):
-            state.messages.extend(message.tool_messages)
-        else:
-            state.messages.append(message)
+        incoming = message.tool_messages if isinstance(message, MultiToolMessage) else [message]
+        self._observe(state, incoming)
+        state.messages.extend(incoming)
 
         reply = self._call(state)
         hidden_cost = 0.0
+        while self.use_line_check and state.line_blocks < 4:
+            problem = self._wrong_line(state, reply)
+            if problem is None:
+                break
+            state.line_blocks += 1
+            hidden_cost += reply.cost or 0.0
+            logger.info(f"[line check] call withheld: {problem}")
+            state.messages.append(reply)
+            for tc in reply.tool_calls:
+                state.messages.append(ToolMessage(id=tc.id, role="tool", requestor="assistant", content=problem))
+            reply = self._call(state)
         while (self.use_guard and not state.transferred and state.blocks < self.max_blocks
                and len(state.reviews) < 2 * self.max_blocks and self._is_handoff(reply)):
             verdict, cost = self._review(state, reply)
@@ -162,12 +235,15 @@ class LineAssistAgent(LLMConfigMixin, HalfDuplexAgent[State]):
                                   items="\n".join(f"- {x}" for x in verdict["remaining"]))
             logger.info(f"[guard] hand-off withheld ({state.blocks}/{self.max_blocks}): {verdict['remaining']}")
             # The withheld draft and the note live only in the agent's private history.
-            state.messages.append(reply)
             if reply.tool_calls:
+                state.messages.append(reply)
                 for tc in reply.tool_calls:
                     state.messages.append(ToolMessage(id=tc.id, role="tool", requestor="assistant", content=note))
             else:
-                state.messages.append(UserMessage(role="user", content=f"[SUPERVISOR NOTE, not from the customer]\n{note}"))
+                # The draft is discarded and the note is added to the agent's instructions.
+                state.notes.append(note)
+                state.system_messages = state.system_messages[:1] + [SystemMessage(
+                    role="system", content="<supervisor_notes>\n" + "\n\n".join(state.notes) + "\n</supervisor_notes>")]
             reply = self._call(state)
 
         if any(tc.name == "transfer_to_human_agents" for tc in (reply.tool_calls or [])):
@@ -184,6 +260,7 @@ def _factory(**fixed):
     return make
 
 
-registry.register_agent_factory(_factory(playbook=True, guard=True), "lineassist")
-registry.register_agent_factory(_factory(playbook=True, guard=False), "lineassist_playbook")
-registry.register_agent_factory(_factory(playbook=False, guard=True), "lineassist_guard")
+registry.register_agent_factory(_factory(), "lineassist")
+registry.register_agent_factory(_factory(guard=False, line_check=False), "lineassist_playbook")
+registry.register_agent_factory(_factory(guard=False), "lineassist_no_guard")
+registry.register_agent_factory(_factory(playbook=False, guard=False), "lineassist_line_check_only")
