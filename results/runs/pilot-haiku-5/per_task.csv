@@ -1,0 +1,6 @@
+task_id,trial,passed,reward,termination,duration_s,agent_cost,user_cost,messages,tool_calls
+[mobile_data_issue]airplane_mode_on|data_mode_off[PERSONA:None],0,1,1.0,user_stop,22.7,0.067314,0.050898000000000006,24,2
+[mobile_data_issue]airplane_mode_on|user_abroad_roaming_enabled_off[PERSONA:None],0,1,1.0,user_stop,23.9,0.058517,0.052228,26,3
+[mobile_data_issue]data_usage_exceeded|user_abroad_roaming_enabled_off[PERSONA:Easy],0,1,1.0,user_stop,47.8,0.15155,0.099349,43,6
+[mobile_data_issue]bad_network_preference|user_abroad_roaming_enabled_off[PERSONA:Hard],0,0,0.0,user_stop,72.7,0.21094200000000002,0.14786499999999997,48,4
+[mobile_data_issue]airplane_mode_on|bad_network_preference[PERSONA:Hard],0,1,1.0,user_stop,75.1,0.18745599999999998,0.13841499999999998,42,2
