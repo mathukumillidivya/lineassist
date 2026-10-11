@@ -111,6 +111,28 @@ is the claim.
 - **Three trials.** Enough to see that failures are consistent per task, not enough to
   estimate rare failures.
 
+## Live demo
+
+`app/` holds a page where a visitor plays the customer: they get a phone with hidden faults,
+talk to LineAssist, and tap checks and fixes on the phone as the agent asks for them.
+
+- **The simulator is the benchmark's own.** The account tools, phone tools and data models
+  are the benchmark's Python files, unmodified, running in the browser through Pyodide.
+  A parity script compared 192 tool calls across the six demo scenarios against the
+  benchmark's environment and found identical results.
+- **The agent's layers run on the page**, as a JavaScript port of `lineassist/agent.py`, and
+  each intervention is shown to the visitor as it happens.
+- **One server function** (`app/netlify/functions/agent.mjs`) reaches the model. It holds the
+  system prompt and tool definitions itself, accepts only a conversation from the browser,
+  limits requests per visitor and per day, and fails closed if it cannot count them.
+- **It includes a policy check that the measured agent did not have**: a `resume_line` call on
+  a line whose contract has ended is withheld in code. This is the fix for the test failure
+  described above. It is unit-tested but has not been run on the benchmark, so the reported
+  results do not include it (`lineassist_v2` is the agent name that enables it).
+
+The demo shows the agent working; it is not evidence of how well it works. The evidence is the
+recorded test runs.
+
 ## Reproducing
 
 Every run happens in GitHub Actions (`.github/workflows/run-bench.yml`) against a pinned
