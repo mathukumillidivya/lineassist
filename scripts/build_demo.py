@@ -33,6 +33,39 @@ FAULTS = {
     "overdue_bill_suspension": "Line suspended for an overdue bill",
     "contract_end_suspension": "Line suspended, contract ended (must go to a human)",
 }
+# Which recorded action counts as the fix for each fault being run (who runs it, tool name, how many times).
+FIXES = {
+    "airplane_mode_on": [("c", "toggle_airplane_mode", 1)], "bad_network_preference": [("c", "set_network_mode_preference", 1)],
+    "data_usage_exceeded": [("a", "refuel_data", 1)], "data_mode_off": [("c", "toggle_data", 1)],
+    "unseat_sim_card": [("c", "reseat_sim_card", 1)], "bad_wifi_calling": [("c", "toggle_wifi_calling", 1)],
+    "break_apn_mms_setting": [("c", "reset_apn_settings", 1)], "break_apn_settings": [("c", "reset_apn_settings", 1)],
+    "user_abroad_roaming_disabled_on": [("a", "enable_roaming", 1)],
+    "user_abroad_roaming_disabled_off": [("a", "enable_roaming", 1), ("c", "toggle_roaming", 1)],
+    "user_abroad_roaming_enabled_off": [("c", "toggle_roaming", 1)],
+    "data_saver_mode_on": [("c", "toggle_data_saver_mode", 1)], "bad_vpn": [("c", "disconnect_vpn", 1)],
+    "break_app_storage_permission": [("c", "grant_app_permission", 1)], "break_app_sms_permission": [("c", "grant_app_permission", 1)],
+    "break_app_both_permissions": [("c", "grant_app_permission", 2)],
+    "lock_sim_card_pin": [("a", "transfer_to_human_agents", 1)], "contract_end_suspension": [("a", "transfer_to_human_agents", 1)],
+    "overdue_bill_suspension": [("a", "resume_line", 1)],
+}
+
+
+def fix_steps(steps: list[dict], faults: list[str]) -> list:
+    """For each fault, the step at which its fix had been run (None if it never was).
+    Agent actions count only when they were made on the customer's own line."""
+    out = []
+    for f in faults:
+        latest = -1
+        for who, tool, times in FIXES[f]:
+            hits = [i for i, s in enumerate(steps) if s["k"] == who + "t" and s["n"] == tool and not s.get("flag")]
+            if len(hits) < times:
+                latest = None
+                break
+            latest = max(latest, hits[times - 1])
+        out.append(latest)
+    return out
+
+
 ISSUES = {"service_issue": "No service", "mobile_data_issue": "Mobile data", "mms_issue": "Picture messages"}
 CHECKS = {
     "assert_service_status": "Phone service is in the correct state", "assert_mobile_data_status": "Mobile data works",
@@ -46,7 +79,17 @@ def clip(text: str, n: int) -> str:
     return text if len(text) <= n else text[:n].rstrip() + " …"
 
 
-def conversation(sim: dict) -> dict:
+def outcome_of(sim: dict) -> str:
+    ri = sim["reward_info"]
+    expected = [a["action"]["name"] for a in ri.get("action_checks") or []]
+    calls = [tc["name"] for m in sim["messages"] if m["role"] == "assistant" for tc in (m.get("tool_calls") or [])]
+    handed = "transfer_to_human_agents" in calls or (sim["messages"][-1].get("content") or "").strip().endswith("###TRANSFER###")
+    if ri["reward"] >= 1 - 1e-6:
+        return "solved"
+    return "handoff" if handed and "transfer_to_human_agents" not in expected else "unresolved"
+
+
+def conversation(sim: dict, fault_keys: list[str]) -> dict:
     results = {m["id"]: m for m in sim["messages"] if m["role"] == "tool"}
     steps = []
     for m in sim["messages"]:
@@ -61,6 +104,9 @@ def conversation(sim: dict) -> dict:
             args = tc.get("arguments") or {}
             step = {"k": who + "t", "n": tc["name"], "a": ", ".join(f"{k}={v}" for k, v in args.items() if k != "summary"),
                     "r": clip(res.get("content") or "", 420)}
+            bar = re.search(r"Status Bar: (.+)", res.get("content") or "")
+            if bar:
+                step["sb"] = bar.group(1).strip()
             line = args.get("line_id") or (args.get("id") if str(args.get("id", "")).startswith("L") else None)
             if who == "a" and line and line != CUSTOMER_LINE and tc["name"] != "get_details_by_id":
                 step["flag"] = f"This is line {line}. The customer's line is {CUSTOMER_LINE}."
@@ -76,7 +122,7 @@ def conversation(sim: dict) -> dict:
     outcome = ("solved" if passed else
                "handoff" if handed and "transfer_to_human_agents" not in expected else "unresolved")
     return {
-        "outcome": outcome, "steps": steps,
+        "outcome": outcome, "steps": steps, "fixed": fix_steps(steps, fault_keys),
         "checks": [[CHECKS.get(e["env_assertion"]["func_name"], e["env_assertion"]["func_name"]), bool(e["met"])]
                    for e in ri.get("env_assertions") or []],
         "missed": sorted({a["action"]["name"] for a in ri.get("action_checks") or [] if not a["action_match"]}),
@@ -97,11 +143,13 @@ def main() -> None:
                 "issue": ISSUES[re.match(r"\[(\w+)\]", name).group(1)],
                 "persona": re.search(r"PERSONA:(\w+)", name).group(1),
                 "faults": [FAULTS[f] for f in name.split("]")[1].split("[")[0].split("|")],
-                "base": {"pass": 0, "n": 0}, "ours": {"pass": 0, "n": 0}})
+                "base": {"pass": 0, "n": 0, "trials": []}, "ours": {"pass": 0, "n": 0, "trials": []}})
+            keys = name.split("]")[1].split("[")[0].split("|")
+            t[agent]["trials"].append(outcome_of(s))
             t[agent]["n"] += 1
             t[agent]["pass"] += s["reward_info"]["reward"] >= 1 - 1e-6
             if s.get("trial") == 0:
-                t[agent]["call"] = conversation(s)
+                t[agent]["call"] = conversation(s, keys)
     ordered = sorted(tasks.values(), key=lambda t: (-(t["ours"]["pass"] - t["base"]["pass"]), -len(t["faults"])))
     for i, t in enumerate(ordered):
         t["id"] = i
