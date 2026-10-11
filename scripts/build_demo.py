@@ -1,0 +1,116 @@
+"""Build the public demo page (app/site/index.html) from saved test runs.
+
+The page replays recorded conversations. It makes no API calls and contains no key.
+Usage: python scripts/build_demo.py
+"""
+import gzip
+import json
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+RUNS = {"base": "test-baseline", "ours": "test-lineassist"}
+CUSTOMER_LINE = "L1002"
+
+FAULTS = {
+    "airplane_mode_on": "Airplane mode is on",
+    "bad_network_preference": "Phone locked to 2G",
+    "data_usage_exceeded": "Data allowance used up",
+    "data_mode_off": "Mobile data switched off",
+    "unseat_sim_card": "SIM card not seated",
+    "bad_wifi_calling": "Wi-Fi Calling blocking picture messages",
+    "break_apn_mms_setting": "Picture-message server address missing",
+    "user_abroad_roaming_disabled_on": "Abroad, roaming not enabled on the account",
+    "user_abroad_roaming_disabled_off": "Abroad, roaming off on the account and the phone",
+    "user_abroad_roaming_enabled_off": "Abroad, roaming switched off in the phone",
+    "data_saver_mode_on": "Data Saver is on",
+    "bad_vpn": "Slow VPN connected",
+    "break_app_storage_permission": "Messaging app lacks storage permission",
+    "break_app_sms_permission": "Messaging app lacks SMS permission",
+    "break_app_both_permissions": "Messaging app lacks storage and SMS permissions",
+    "break_apn_settings": "Network (APN) settings broken",
+    "lock_sim_card_pin": "SIM locked by PIN (only a human can unlock)",
+    "overdue_bill_suspension": "Line suspended for an overdue bill",
+    "contract_end_suspension": "Line suspended, contract ended (must go to a human)",
+}
+ISSUES = {"service_issue": "No service", "mobile_data_issue": "Mobile data", "mms_issue": "Picture messages"}
+CHECKS = {
+    "assert_service_status": "Phone has service", "assert_mobile_data_status": "Mobile data works",
+    "assert_internet_speed": "Speed test is excellent", "assert_can_send_mms": "Picture messages send",
+    "assert_data_refueling_amount": "Correct data top-up applied", "assert_no_overdue_bill": "No overdue bill left",
+}
+
+
+def clip(text: str, n: int) -> str:
+    text = text or ""
+    return text if len(text) <= n else text[:n].rstrip() + " …"
+
+
+def conversation(sim: dict) -> dict:
+    results = {m["id"]: m for m in sim["messages"] if m["role"] == "tool"}
+    steps = []
+    for m in sim["messages"]:
+        if m["role"] == "tool":
+            continue
+        who = "a" if m["role"] == "assistant" else "c"
+        text = (m.get("content") or "").replace("###STOP###", "").replace("###TRANSFER###", "").strip()
+        if text:
+            steps.append({"k": who, "t": clip(text, 900)})
+        for tc in m.get("tool_calls") or []:
+            res = results.get(tc["id"], {})
+            args = tc.get("arguments") or {}
+            step = {"k": who + "t", "n": tc["name"], "a": ", ".join(f"{k}={v}" for k, v in args.items() if k != "summary"),
+                    "r": clip(res.get("content") or "", 420)}
+            line = args.get("line_id") or (args.get("id") if str(args.get("id", "")).startswith("L") else None)
+            if who == "a" and line and line != CUSTOMER_LINE and tc["name"] != "get_details_by_id":
+                step["flag"] = f"This is line {line}. The customer's line is {CUSTOMER_LINE}."
+            if tc["name"] == "transfer_to_human_agents":
+                step["flag2"] = "Handed to a human"
+                step["r"] = clip(args.get("summary", ""), 420)
+            steps.append(step)
+    ri = sim["reward_info"]
+    expected = [a["action"]["name"] for a in ri.get("action_checks") or []]
+    agent_calls = [tc["name"] for m in sim["messages"] if m["role"] == "assistant" for tc in (m.get("tool_calls") or [])]
+    handed = "transfer_to_human_agents" in agent_calls or (sim["messages"][-1].get("content") or "").strip().endswith("###TRANSFER###")
+    passed = ri["reward"] >= 1 - 1e-6
+    outcome = ("solved" if passed else
+               "handoff" if handed and "transfer_to_human_agents" not in expected else "unresolved")
+    return {
+        "outcome": outcome, "steps": steps,
+        "checks": [[CHECKS.get(e["env_assertion"]["func_name"], e["env_assertion"]["func_name"]), bool(e["met"])]
+                   for e in ri.get("env_assertions") or []],
+        "missed": sorted({a["action"]["name"] for a in ri.get("action_checks") or [] if not a["action_match"]}),
+        "cost": round((sim.get("agent_cost") or 0) + (sim.get("user_cost") or 0), 3),
+        "secs": round(sim.get("duration") or 0),
+        "handoff_expected": "transfer_to_human_agents" in expected,
+    }
+
+
+def main() -> None:
+    sims = {k: json.loads(gzip.open(ROOT / "results/runs" / v / "results.json.gz").read())["simulations"]
+            for k, v in RUNS.items()}
+    tasks = {}
+    for agent, rows in sims.items():
+        for s in rows:
+            name = s["task_id"]
+            t = tasks.setdefault(name, {
+                "issue": ISSUES[re.match(r"\[(\w+)\]", name).group(1)],
+                "persona": re.search(r"PERSONA:(\w+)", name).group(1),
+                "faults": [FAULTS[f] for f in name.split("]")[1].split("[")[0].split("|")],
+                "base": {"pass": 0, "n": 0}, "ours": {"pass": 0, "n": 0}})
+            t[agent]["n"] += 1
+            t[agent]["pass"] += s["reward_info"]["reward"] >= 1 - 1e-6
+            if s.get("trial") == 0:
+                t[agent]["call"] = conversation(s)
+    ordered = sorted(tasks.values(), key=lambda t: (-(t["ours"]["pass"] - t["base"]["pass"]), -len(t["faults"])))
+    for i, t in enumerate(ordered):
+        t["id"] = i
+    data = {"tasks": ordered, "comparison": json.loads((ROOT / "results/test_comparison.json").read_text())}
+    html = (ROOT / "app/template.html").read_text().replace("/*DATA*/null", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))
+    out = ROOT / "app/site/index.html"
+    out.write_text(html)
+    print(f"{out} written: {len(ordered)} tasks, {out.stat().st_size / 1e6:.2f} MB")
+
+
+if __name__ == "__main__":
+    main()

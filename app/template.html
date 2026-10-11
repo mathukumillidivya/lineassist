@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LineAssist: telecom support agent</title>
+<meta name="description" content="A telecom customer-support agent measured on held-out tau-bench tasks. Replay real recorded calls side by side.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #eef0f3; --surface: #fbfcfd; --sunk: #e3e6eb; --line: #cfd4dc;
+  --ink: #141b27; --muted: #566174; --accent: #0d5f6e; --accent-soft: #d6eaed;
+  --mast: #141b27; --mast-ink: #f2f5f9; --mast-muted: #9aa6b8;
+  --bad: #a8321f; --bad-soft: #f6dcd6; --warn: #8a5a00; --warn-soft: #f5e6c4; --good: #2d6a3e; --good-soft: #d9ecde;
+  --base: #8a93a3; --ours: #0085a1;
+  --display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --bg: #10141b; --surface: #1a2029; --sunk: #232a35; --line: #343d4b;
+  --ink: #e6eaf0; --muted: #98a3b4; --accent: #5cc0cf; --accent-soft: #173a41;
+  --mast: #0a0d12;
+  --bad: #ff9b86; --bad-soft: #4a211a; --warn: #f0c060; --warn-soft: #453410; --good: #86d09a; --good-soft: #1b3a25;
+  --base: #6f7a8c; --ours: #1f9db5; color-scheme: dark } }
+* { box-sizing: border-box }
+html { -webkit-text-size-adjust: 100% }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--body) }
+p, h1, h2, h3, ul { margin: 0 } ul { padding: 0; list-style: none }
+[hidden] { display: none !important }
+button { font: inherit; color: inherit; cursor: pointer }
+button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.eyebrow { font: 600 12px/1.2 var(--body); text-transform: uppercase; letter-spacing: .09em; color: var(--muted) }
+
+.mast { background: var(--mast); color: var(--mast-ink) }
+.mast-in { max-width: 1240px; margin: 0 auto; padding: 16px 16px 0; display: grid; gap: 14px }
+.brand { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; justify-content: space-between }
+.brand h1 { font: 700 26px/1.1 var(--display); letter-spacing: .02em }
+.brand p { color: var(--mast-muted); font-size: 13px }
+.tabs { display: flex; gap: 4px; overflow-x: auto }
+.tab { background: transparent; border: 0; border-bottom: 3px solid transparent; color: var(--mast-muted); padding: 8px 14px; font-weight: 500; white-space: nowrap }
+.tab[aria-selected="true"] { color: var(--mast-ink); border-bottom-color: var(--ours) }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 22px 16px 48px; display: grid; gap: 24px }
+
+.claim { display: grid; gap: 10px }
+.claim h2 { font: 700 clamp(30px, 5.4vw, 54px)/1.04 var(--display); text-wrap: balance; max-width: 20ch }
+.claim h2 em { font-style: normal; color: var(--accent) }
+.claim p { color: var(--muted); font-size: 16px; max-width: 66ch }
+
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line) }
+.tile { padding: 16px 18px; border-right: 1px solid var(--line); display: grid; gap: 6px; align-content: start; min-width: 0 }
+.tile:last-child { border-right: 0 }
+.tile .pair { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap }
+.tile .was { font: 500 20px/1 var(--display); color: var(--muted); text-decoration: line-through; text-decoration-thickness: 1px }
+.tile .now { font: 700 34px/1 var(--display) }
+.tile small { color: var(--muted); font-size: 13px }
+@media (max-width: 860px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)) } .tile:nth-child(2) { border-right: 0 } .tile:nth-child(-n+2) { border-bottom: 1px solid var(--line) } }
+@media (max-width: 460px) { .tiles { grid-template-columns: minmax(0, 1fr) } .tile { border-right: 0; border-bottom: 1px solid var(--line) } .tile:last-child { border-bottom: 0 } }
+
+.card { background: var(--surface); border: 1px solid var(--line); padding: 18px; display: grid; gap: 14px; min-width: 0 }
+.card h3 { font: 600 19px/1.2 var(--display) }
+.card > p { color: var(--muted); max-width: 72ch }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px }
+@media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr) } }
+
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--muted) }
+.sw { display: inline-block; width: 11px; height: 11px; margin-right: 6px; vertical-align: -1px }
+.bars { display: grid; gap: 12px }
+.bar-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 10px; align-items: center }
+.bar-row > span { font-size: 13px; color: var(--muted) }
+.bar-pair { display: grid; gap: 3px }
+.bar { display: flex; align-items: center; gap: 8px; min-width: 0 }
+.bar i { display: block; height: 16px; min-width: 2px }
+.bar b { font: 500 12.5px/1 var(--mono); white-space: nowrap }
+.stack { display: flex; height: 26px; width: 100%; overflow: hidden }
+.stack i { display: block; height: 100% }
+.stack-key { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted) }
+
+.note { border-left: 3px solid var(--bad); background: var(--bad-soft); padding: 12px 14px; display: grid; gap: 6px }
+.note b { font-weight: 600 }
+.limits { display: grid; gap: 8px }
+.limits li { padding-left: 14px; position: relative; color: var(--muted) }
+.limits li::before { content: ""; position: absolute; left: 0; top: .65em; width: 6px; height: 1px; background: var(--muted) }
+.limits b { color: var(--ink); font-weight: 600 }
+
+/* replay */
+.desk { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 18px; align-items: start }
+@media (max-width: 980px) { .desk { grid-template-columns: minmax(0, 1fr) } }
+.queue { background: var(--surface); border: 1px solid var(--line); display: grid; min-width: 0 }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; border-bottom: 1px solid var(--line) }
+.chip { border: 1px solid var(--line); background: transparent; padding: 4px 10px; font-size: 13px; border-radius: 999px }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink) }
+.qcount { padding: 8px 12px; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--line) }
+.qlist { max-height: 70vh; overflow-y: auto }
+@media (max-width: 980px) { .qlist { max-height: 260px } }
+.qitem { display: grid; gap: 4px; width: 100%; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 10px 12px }
+.qitem[aria-current="true"] { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent) }
+.qitem .top { display: flex; justify-content: space-between; gap: 8px; font-weight: 500 }
+.qitem .sub { font-size: 12.5px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px }
+.score { font: 500 12.5px/1.4 var(--mono); white-space: nowrap }
+.score .b { color: var(--muted) } .score .o { color: var(--accent) }
+
+.case { display: grid; gap: 14px; min-width: 0 }
+.case-head { background: var(--surface); border: 1px solid var(--line); padding: 16px 18px; display: grid; gap: 10px }
+.case-head h3 { font: 600 22px/1.15 var(--display) }
+.faults { display: flex; flex-wrap: wrap; gap: 6px }
+.fault { background: var(--sunk); padding: 3px 9px; font-size: 13px; border-radius: 3px }
+.switch { display: none; gap: 6px }
+@media (max-width: 760px) { .switch { display: flex } }
+.calls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start }
+@media (max-width: 760px) { .calls { grid-template-columns: minmax(0, 1fr) } .calls[data-show="base"] .call.ours, .calls[data-show="ours"] .call.base { display: none } }
+.call { background: var(--surface); border: 1px solid var(--line); display: grid; min-width: 0 }
+.call-head { padding: 12px 14px; border-bottom: 1px solid var(--line); display: grid; gap: 8px }
+.call-head h4 { margin: 0; font: 600 16px/1.2 var(--display); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap }
+.call.base .call-head { box-shadow: inset 0 3px 0 var(--base) } .call.ours .call-head { box-shadow: inset 0 3px 0 var(--ours) }
+.verdict { display: inline-block; padding: 2px 9px; font: 600 12.5px/1.5 var(--body); border-radius: 3px }
+.verdict.solved { background: var(--good-soft); color: var(--good) }
+.verdict.handoff { background: var(--warn-soft); color: var(--warn) }
+.verdict.unresolved { background: var(--bad-soft); color: var(--bad) }
+.checks { display: grid; gap: 2px; font-size: 13px }
+.checks .ok { color: var(--good) } .checks .no { color: var(--bad) }
+.meta { font-size: 12.5px; color: var(--muted) }
+.thread { padding: 12px 14px; display: grid; gap: 8px; max-height: 78vh; overflow-y: auto }
+.msg { max-width: 92%; padding: 8px 11px; border-radius: 8px; overflow-wrap: anywhere; font-size: 14px; white-space: pre-wrap }
+.msg.a { background: var(--accent-soft); justify-self: start; border-bottom-left-radius: 2px }
+.msg.c { background: var(--sunk); justify-self: end; border-bottom-right-radius: 2px }
+.msg .who { display: block; font: 600 11px/1.4 var(--body); text-transform: uppercase; letter-spacing: .07em; color: var(--muted) }
+.act { font-size: 12.5px; border: 1px dashed var(--line); border-radius: 4px; overflow-wrap: anywhere }
+.act summary { padding: 5px 9px; cursor: pointer; display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline }
+.act summary span { color: var(--muted) }
+.act pre { margin: 0; padding: 6px 9px; border-top: 1px dashed var(--line); font: 12px/1.45 var(--mono); white-space: pre-wrap; color: var(--muted) }
+.act.ct { justify-self: end; max-width: 92% } .act.at { justify-self: start; max-width: 92% }
+.act.flag { border: 1px solid var(--bad); background: var(--bad-soft) }
+.act.flag2 { border: 1px solid var(--warn); background: var(--warn-soft) }
+.flagline { padding: 0 9px 6px; color: var(--bad); font-weight: 500 }
+.flag2 .flagline { color: var(--warn) }
+
+.layers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--line); background: var(--surface) }
+.layer { padding: 16px; border-right: 1px solid var(--line); display: grid; gap: 8px; align-content: start }
+.layer:last-child { border-right: 0 }
+.layer h4 { margin: 0; font: 600 17px/1.2 var(--display) }
+.layer p { color: var(--muted); font-size: 14px }
+.kind { font: 500 11.5px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--accent) }
+@media (max-width: 900px) { .layers { grid-template-columns: repeat(2, minmax(0, 1fr)) } .layer:nth-child(2) { border-right: 0 } .layer:nth-child(-n+2) { border-bottom: 1px solid var(--line) } }
+@media (max-width: 520px) { .layers { grid-template-columns: minmax(0, 1fr) } .layer { border-right: 0; border-bottom: 1px solid var(--line) } .layer:last-child { border-bottom: 0 } }
+footer { color: var(--muted); font-size: 13px }
+</style>
+</head>
+<body>
+<header class="mast"><div class="mast-in">
+  <div class="brand"><h1>LineAssist</h1><p>Telecom support agent, measured on held-out tau-bench tasks</p></div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-view="results">Results</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="replay">Replay calls</button>
+    <button class="tab" role="tab" aria-selected="false" data-view="how">How it works</button>
+  </div>
+</div></header>
+
+<main class="wrap" id="results">
+  <section class="claim">
+    <p class="eyebrow">40 unseen support calls, 3 attempts each</p>
+    <h2>The same model solved <span id="h-base"></span> of calls. With LineAssist it solved <em id="h-ours"></em>.</h2>
+    <p>A simulated customer calls with a phone that has between two and nine things wrong with it. The agent cannot touch the phone. It has to talk the customer through every check and fix, and a call counts only if the phone and the account end up working. Both agents use the same language model. The difference is the engineering around it.</p>
+  </section>
+  <section class="tiles" id="tiles"></section>
+  <div class="two">
+    <section class="card"><h3>Calls solved, by how many faults the phone had</h3>
+      <div class="legend"><span><i class="sw" style="background:var(--base)"></i>Standard agent</span><span><i class="sw" style="background:var(--ours)"></i>LineAssist</span></div>
+      <div class="bars" id="by-faults"></div></section>
+    <section class="card"><h3>Calls solved, by type of problem</h3>
+      <div class="legend"><span><i class="sw" style="background:var(--base)"></i>Standard agent</span><span><i class="sw" style="background:var(--ours)"></i>LineAssist</span></div>
+      <div class="bars" id="by-issue"></div></section>
+  </div>
+  <section class="card"><h3>How the 120 calls ended</h3>
+    <p>The standard agent's main failure is giving up: it fixes one or two faults, sees the problem is still there, and hands the customer to a human while the fix was still available.</p>
+    <div class="bars" id="endings"></div>
+    <div class="stack-key"><span><i class="sw" style="background:var(--good)"></i>Solved</span><span><i class="sw" style="background:var(--warn)"></i>Handed to a human when a fix was available</span><span><i class="sw" style="background:var(--bad)"></i>Customer left with the problem unresolved</span></div>
+  </section>
+  <section class="card"><h3>The call it gets wrong</h3>
+    <div class="note"><p><b>All three LineAssist failures are the same call, and it is a rule violation.</b></p>
+      <p>The line was suspended because its contract had ended, which the provider's policy says an agent must not lift. LineAssist took payment for an overdue bill and reactivated the line anyway. The fix is to enforce that rule in code, the way the line check already works. It has not been applied, because changing the agent after seeing the test calls would make the result above dishonest.</p></div>
+    <p><button class="chip" id="see-failure">Replay that call</button></p>
+  </section>
+  <section class="card"><h3>What this does not show</h3>
+    <ul class="limits">
+      <li><b>Unseen means new combinations, not new problems.</b> The test calls combine the same kinds of fault as the development calls, in different sets, on the same customer account.</li>
+      <li><b>The customer is simulated.</b> It always has its phone, always cooperates in the end, and never misreads a screen. Real callers do none of these reliably.</li>
+      <li><b>Not comparable to the public leaderboard.</b> Both agents talked to a lower-cost customer simulator than published results use. Only the comparison between the two agents holds.</li>
+      <li><b>One model.</b> Every call used Claude Haiku 4.5. A stronger model would start from a higher baseline.</li>
+      <li><b>The layers are not separated.</b> They were added one after another in development and not removed one at a time, so the share each contributes is not isolated.</li>
+    </ul>
+  </section>
+  <footer>Benchmark: tau-bench (tau2-bench), Sierra Research. Built by Divya Sri.</footer>
+</main>
+
+<main class="wrap" id="replay" hidden>
+  <div class="desk">
+    <aside class="queue">
+      <div class="filters" id="filters"></div>
+      <div class="qcount" id="qcount"></div>
+      <div class="qlist" id="qlist"></div>
+    </aside>
+    <section class="case" id="case"></section>
+  </div>
+</main>
+
+<main class="wrap" id="how" hidden>
+  <section class="claim"><p class="eyebrow">What was built</p>
+    <h2>Four layers around an unchanged model</h2>
+    <p>The failures of the standard agent were read from recorded development calls before anything was built. Each layer answers one of them. Two are plain code, so they behave the same way every time.</p></section>
+  <section class="layers">
+    <div class="layer"><span class="kind">Prompt</span><h4>Playbook</h4><p>The provider's own manual, reorganised into one ordered checklist per problem, with a rule to keep going until the phone passes its check. The agent asks for one named action at a time and never describes screens it cannot see.</p></div>
+    <div class="layer"><span class="kind">Code</span><h4>Line check</h4><p>An account can hold several lines. Any action that names a line is withheld unless that line's number is the number the customer gave. The standard agent changed settings on someone else's line.</p></div>
+    <div class="layer"><span class="kind">Code</span><h4>Case notes</h4><p>Facts that follow mechanically from account data are computed, not left to the model: is this the customer's line, has the contract ended, is the data allowance used up.</p></div>
+    <div class="layer"><span class="kind">Model call</span><h4>Hand-off guard</h4><p>Before a customer is passed to a human, a second review lists checklist items not yet examined. If any remain, the transfer is withheld. It can overrule the agent three times at most.</p></div>
+  </section>
+  <section class="card"><h3>Where the gain came from in development</h3>
+    <p>74 development calls, one attempt each, layers added in this order. These are single runs on the calls the agent was designed against, so they overstate performance and each step is noisy. The hand-off guard added one call, which is within noise.</p>
+    <div class="bars" id="buildup"></div>
+  </section>
+  <section class="card"><h3>What the standard agent got wrong on those calls</h3>
+    <ul class="limits">
+      <li><b>Gave up early.</b> 40 of its 52 failures were hand-offs to a human while a fix was still available.</li>
+      <li><b>Worked on the wrong line.</b> In 39 of 52 failures it never looked at the customer's own line. In 26 it read or changed another one.</li>
+      <li><b>Skipped the data allowance.</b> It missed the data top-up in 34 of the 38 calls that needed one.</li>
+      <li><b>Invented menus.</b> It described buttons it could not see, and the customer then reported doing things that never happened on the phone.</li>
+    </ul>
+  </section>
+</main>
+
+<script>
+const DATA = /*DATA*/null;
+const T = DATA.tasks, C = DATA.comparison;
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const rich = s => esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/`([^`]+)`/g, '<span class="mono">$1</span>');
+const pct = (a, b) => b ? Math.round(1000 * a / b) / 10 : 0;
+const AG = { base: "Standard agent", ours: "LineAssist" };
+const END = { solved: "Solved", handoff: "Handed to a human when a fix was available", unresolved: "Problem left unresolved" };
+
+// ---- tabs
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => show(b.dataset.view));
+function show(view) {
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view));
+  ["results", "replay", "how"].forEach(v => $("#" + v).hidden = v !== view);
+  window.scrollTo(0, 0);
+}
+
+// ---- results
+const sum = (f) => T.reduce((a, t) => a + f(t), 0);
+const tot = { base: [sum(t => t.base.pass), sum(t => t.base.n)], ours: [sum(t => t.ours.pass), sum(t => t.ours.n)] };
+$("#h-base").textContent = pct(...tot.base) + "%";
+$("#h-ours").textContent = pct(...tot.ours) + "%";
+const all3 = a => T.filter(t => t[a].pass === t[a].n).length;
+const money = v => "$" + v.toFixed(3);
+$("#tiles").innerHTML = [
+  ["Calls solved", `${tot.base[0]} of ${tot.base[1]}`, `${tot.ours[0]} of ${tot.ours[1]}`, "three attempts at each of 40 calls"],
+  ["Solved on every attempt", `${all3("base")} of 40`, `${all3("ours")} of 40`, "the number that matters once an agent is live"],
+  ["Needless hand-offs to a human", Math.round(C.baseline.unneeded_handoffs * tot.base[1]), Math.round(C.candidate.unneeded_handoffs * tot.ours[1]), "out of 120 calls"],
+  ["Cost per solved call", money(C.baseline.cost_per_solved), money(C.candidate.cost_per_solved), "model usage, agent and simulated customer"],
+].map(([k, was, now, sub]) => `<div class="tile"><span class="eyebrow">${k}</span><div class="pair"><span class="now">${now}</span><span class="was" title="Standard agent">${was}</span></div><small>${sub}; standard agent struck through</small></div>`).join("");
+
+function pairBars(el, groups) {
+  el.innerHTML = groups.map(([label, b, o]) => `<div class="bar-row"><span>${label}</span><div class="bar-pair">` +
+    [["base", b], ["ours", o]].map(([a, [p, n]]) => `<div class="bar"><i style="width:${Math.max(0.5, 78 * p / n)}%;background:var(--${a})"></i><b>${p}/${n}</b></div>`).join("") + `</div></div>`).join("");
+}
+const group = (key, order) => order.map(k => { const ts = T.filter(t => key(t) === k);
+  return [k, [ts.reduce((a, t) => a + t.base.pass, 0), ts.reduce((a, t) => a + t.base.n, 0)], [ts.reduce((a, t) => a + t.ours.pass, 0), ts.reduce((a, t) => a + t.ours.n, 0)]]; });
+const bucket = t => { const n = t.faults.length; return n <= 2 ? "2 faults" : n <= 4 ? "3 to 4" : n <= 6 ? "5 to 6" : "7 or more"; };
+pairBars($("#by-faults"), group(bucket, ["2 faults", "3 to 4", "5 to 6", "7 or more"]));
+pairBars($("#by-issue"), group(t => t.issue, ["No service", "Mobile data", "Picture messages"]));
+
+const ends = a => { const s = tot[a][0], h = Math.round((a === "base" ? C.baseline : C.candidate).unneeded_handoffs * tot[a][1]); return [s, h, tot[a][1] - s - h]; };
+$("#endings").innerHTML = ["base", "ours"].map(a => { const [s, h, u] = ends(a), n = s + h + u;
+  return `<div class="bar-row"><span>${AG[a]}</span><div><div class="stack" role="img" aria-label="${s} solved, ${h} handed off, ${u} unresolved">` +
+    `<i style="width:${100 * s / n}%;background:var(--good)"></i><i style="width:${100 * h / n}%;background:var(--warn)"></i><i style="width:${100 * u / n}%;background:var(--bad)"></i></div>` +
+    `<div class="meta mono">${s} solved · ${h} handed off · ${u} unresolved</div></div></div>`; }).join("");
+
+const BUILD = [["Standard agent", 22, "base"], ["+ playbook", 42, "ours"], ["+ hand-off guard", 43, "ours"], ["+ line check", 53, "ours"], ["+ case notes", 66, "ours"], ["+ two wording fixes", 69, "ours"]];
+$("#buildup").innerHTML = BUILD.map(([l, v, a]) => `<div class="bar-row" style="grid-template-columns:150px minmax(0,1fr)"><span>${l}</span><div class="bar"><i style="width:${78 * v / 74}%;background:var(--${a})"></i><b>${v}/74</b></div></div>`).join("");
+
+// ---- replay
+const FILTERS = [["All calls", () => true], ["No service", t => t.issue === "No service"], ["Mobile data", t => t.issue === "Mobile data"],
+  ["Picture messages", t => t.issue === "Picture messages"], ["Standard agent failed", t => t.base.pass < t.base.n], ["LineAssist failed", t => t.ours.pass < t.ours.n]];
+let filter = 0, current = T[0].id, side = "ours";
+function drawFilters() {
+  $("#filters").innerHTML = FILTERS.map(([l, f], i) => `<button class="chip" aria-pressed="${i === filter}" data-i="${i}">${l} (${T.filter(f).length})</button>`).join("");
+  $("#filters").querySelectorAll("button").forEach(b => b.onclick = () => { filter = +b.dataset.i; const m = T.filter(FILTERS[filter][1]); if (m.length && !m.some(t => t.id === current)) current = m[0].id; drawFilters(); drawList(); drawCase(); });
+}
+function drawList() {
+  const m = T.filter(FILTERS[filter][1]);
+  $("#qcount").textContent = `Showing ${m.length} of ${T.length} calls. Scores are attempts solved out of 3.`;
+  $("#qlist").innerHTML = m.map(t => `<button class="qitem" aria-current="${t.id === current}" data-id="${t.id}"><span class="top"><span>${t.issue}</span><span class="score"><span class="b">${t.base.pass}/3</span> → <span class="o">${t.ours.pass}/3</span></span></span>` +
+    `<span class="sub"><span>${t.faults.length} faults${t.persona === "Hard" ? " · difficult customer" : t.persona === "Easy" ? " · easy customer" : ""}</span><span>standard → LineAssist</span></span></button>`).join("");
+  $("#qlist").querySelectorAll("button").forEach(b => b.onclick = () => { current = +b.dataset.id; drawList(); drawCase(); if (window.innerWidth <= 980) $("#case").scrollIntoView({ behavior: "smooth" }); });
+}
+function step(s) {
+  if (s.k === "a" || s.k === "c") return `<div class="msg ${s.k}"><span class="who">${s.k === "a" ? "Agent" : "Customer"}</span>${rich(s.t)}</div>`;
+  const cls = "act " + s.k + (s.flag ? " flag" : s.flag2 ? " flag2" : "");
+  const lead = s.k === "at" ? "Agent, on the account" : "Customer, on the phone";
+  return `<details class="${cls}"${s.flag || s.flag2 ? " open" : ""}><summary><span>${lead}:</span><b class="mono">${esc(s.n)}</b>${s.a ? `<span class="mono">${esc(s.a)}</span>` : ""}</summary>` +
+    (s.flag ? `<div class="flagline">${esc(s.flag)}</div>` : "") + (s.flag2 ? `<div class="flagline">${esc(s.flag2)}</div>` : "") + (s.r ? `<pre>${esc(s.r)}</pre>` : "") + `</details>`;
+}
+function callHtml(t, a) {
+  const c = t[a].call;
+  return `<article class="call ${a}"><div class="call-head"><h4><span>${AG[a]}</span><span class="verdict ${c.outcome}">${END[c.outcome]}</span></h4>` +
+    `<div class="checks">${c.checks.map(([l, ok]) => `<span class="${ok ? "ok" : "no"}">${ok ? "✓" : "✗"} ${esc(l)}</span>`).join("")}` +
+    (c.missed.length ? `<span class="no">Required steps never done: <span class="mono">${c.missed.map(esc).join(", ")}</span></span>` : "") + `</div>` +
+    `<div class="meta">This recording is attempt 1 of 3. Solved ${t[a].pass} of ${t[a].n} attempts. ${c.steps.length} steps, ${c.secs}s, $${c.cost.toFixed(3)}.</div></div>` +
+    `<div class="thread">${c.steps.map(step).join("")}</div></article>`;
+}
+function drawCase() {
+  const t = T.find(x => x.id === current);
+  $("#case").innerHTML = `<div class="case-head"><p class="eyebrow">${t.issue} · ${t.faults.length} faults on the phone or account${t.base.call.handoff_expected ? " · correct outcome is a hand-off" : ""}</p>` +
+    `<h3>What was wrong when the customer called</h3><div class="faults">${t.faults.map(f => `<span class="fault">${esc(f)}</span>`).join("")}</div>` +
+    `<p class="meta">The agent is told none of this. It has to find each fault by asking the customer to run checks. Dashed rows are actions; open one to see what came back.</p>` +
+    `<div class="switch"><button class="chip" aria-pressed="${side === "base"}" data-s="base">Standard agent</button><button class="chip" aria-pressed="${side === "ours"}" data-s="ours">LineAssist</button></div></div>` +
+    `<div class="calls" data-show="${side}">${callHtml(t, "base")}${callHtml(t, "ours")}</div>`;
+  $("#case").querySelectorAll(".switch button").forEach(b => b.onclick = () => { side = b.dataset.s; drawCase(); });
+}
+$("#see-failure").onclick = () => { filter = 5; current = T.filter(FILTERS[5][1])[0].id; drawFilters(); drawList(); drawCase(); show("replay"); };
+drawFilters(); drawList(); drawCase();
+</script>
+</body>
+</html>
