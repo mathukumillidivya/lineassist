@@ -1,0 +1,57 @@
+name: run-bench
+on:
+  workflow_dispatch:
+    inputs:
+      run_id: {description: "Name for this run (folder under results/runs)", required: true}
+      agent: {description: "Agent implementation", default: "llm_agent"}
+      domain: {description: "telecom or telecom-workflow", default: "telecom"}
+      agent_model: {default: "anthropic/claude-haiku-4-5-20251001"}
+      user_model: {default: "anthropic/claude-haiku-4-5-20251001"}
+      split: {description: "train (development) or test (held out)", default: "train"}
+      num_tasks: {description: "How many tasks (blank = all in the split)", default: ""}
+      num_trials: {default: "1"}
+      seed: {default: "300"}
+permissions:
+  contents: write
+env:
+  TAU2_COMMIT: 4ce7c0397c1eb65c9bbe59aeacfe1ca44a1cd699
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Get the benchmark at a pinned version
+        run: |
+          git clone https://github.com/sierra-research/tau2-bench.git
+          git -C tau2-bench checkout "$TAU2_COMMIT"
+          cd tau2-bench && uv sync
+      - name: Run
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONPATH: ${{ github.workspace }}
+        working-directory: tau2-bench
+        run: |
+          test -n "$ANTHROPIC_API_KEY" || { echo "ANTHROPIC_API_KEY secret is not set"; exit 1; }
+          EXTRA=""
+          if [ -n "${{ inputs.num_tasks }}" ]; then EXTRA="--num-tasks ${{ inputs.num_tasks }}"; fi
+          uv run python ../scripts/run.py run \
+            --domain "${{ inputs.domain }}" --agent "${{ inputs.agent }}" \
+            --agent-llm "${{ inputs.agent_model }}" --user-llm "${{ inputs.user_model }}" \
+            --task-split-name "${{ inputs.split }}" --num-trials "${{ inputs.num_trials }}" \
+            --seed "${{ inputs.seed }}" --max-concurrency 4 --timeout 1200 \
+            --save-to "${{ inputs.run_id }}" $EXTRA
+      - name: Summarise and save
+        if: always()
+        run: |
+          SRC="tau2-bench/data/simulations/${{ inputs.run_id }}/results.json"
+          OUT="results/runs/${{ inputs.run_id }}"
+          test -f "$SRC" || { echo "no results file"; exit 1; }
+          python scripts/summarize.py "$SRC" "$OUT"
+          gzip -9 -c "$SRC" > "$OUT/results.json.gz"
+          git config user.name "Divya Sri"
+          git config user.email "hellosweety789@gmail.com"
+          git add "$OUT"
+          git commit -m "Results: ${{ inputs.run_id }}"
+          git pull --rebase && git push
