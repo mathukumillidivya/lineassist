@@ -26,7 +26,7 @@ jobs:
         run: |
           git clone https://github.com/sierra-research/tau2-bench.git
           git -C tau2-bench checkout "$TAU2_COMMIT"
-          cd tau2-bench && uv sync
+          cd tau2-bench && uv sync && uv pip install websockets
       - name: Run
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
