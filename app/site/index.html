@@ -32,7 +32,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .bars { display: flex; align-items: flex-end; gap: 3px; height: 20px }
 .bars i { width: 5px; background: var(--carrier); border-radius: 1.5px }
 .bars i:nth-child(1) { height: 6px } .bars i:nth-child(2) { height: 10px } .bars i:nth-child(3) { height: 15px } .bars i:nth-child(4) { height: 20px }
-.nav { display: flex; gap: 2px; background: var(--sunk); padding: 3px; border-radius: 10px }
+.nav { display: flex; gap: 2px; background: var(--sunk); padding: 3px; border-radius: 10px; max-width: 100%; overflow-x: auto; scrollbar-width: none }
 .nav button { padding: 7px 14px; border-radius: 8px; font-weight: 500; color: var(--muted); white-space: nowrap }
 .nav button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(27, 26, 58, .12) }
 .top .aside { margin-left: auto; color: var(--muted); font-size: 13px }
@@ -121,6 +121,38 @@ main > * { min-width: 0 }
 .vrow .dots { display: flex; gap: 4px; align-items: center }
 .vrow span.t { color: var(--muted); font-size: 13px; margin-left: 6px }
 
+/* live call */
+.scenarios { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-top: 8px }
+.scn { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px; display: grid; gap: 3px; align-content: start }
+.scn b { font: 600 15px/1.25 var(--head) } .scn span { font-size: 13px; color: var(--muted) }
+.scn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff } .scn[aria-pressed="true"] span { color: #c9c7e6 }
+.screen.live { grid-template-rows: auto auto minmax(0, 1fr); min-height: 0; height: min(74vh, 660px) }
+@media (max-width: 760px) { .screen.live { height: 460px } }
+.screen.live .readout { border-bottom: 1px solid var(--line); max-height: 250px; overflow-y: auto }
+.tell { justify-self: start; background: var(--carrier); color: #fff; padding: 7px 12px; border-radius: 9px; font-weight: 600; font-size: 13.5px }
+.actions { overflow-y: auto; min-height: 0; padding: 4px 10px 12px; overscroll-behavior: contain }
+.actions h5 { margin: 12px 4px 4px; font: 600 12.5px/1 var(--body); color: var(--muted) }
+.actions .row { display: block; width: 100%; text-align: left; padding: 8px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); margin-top: 5px; font-size: 14px }
+.actions .row small { display: block; color: var(--muted); font-size: 12px }
+.actions .row.asked { border-color: var(--carrier); background: var(--carrier-soft) } .actions .row.asked small { color: var(--carrier) }
+.actions .row:active { background: var(--sunk) }
+.talk-title { font: 600 16px/1 var(--head) }
+.ghostbtn { padding: 6px 11px; border-radius: 8px; border: 1px solid var(--line); font-size: 13px; font-weight: 500 }
+.composer { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); align-items: flex-end }
+.composer textarea { flex: 1; resize: none; font: inherit; color: inherit; border: 1px solid var(--line); border-radius: 12px; padding: 9px 12px; background: var(--paper); min-width: 0 }
+.composer button { background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 12px; font-weight: 600 }
+.composer button:disabled, .composer textarea:disabled { opacity: .5; cursor: default }
+.act.guardrow { background: var(--carrier); color: #fff; padding: 8px 11px; border-radius: 10px; max-width: 100%; display: block }
+.role { font-size: 14px; color: var(--muted) }
+.goal { padding: 9px 12px; border-radius: 10px; font-weight: 600; font-size: 14px }
+.goal.wait { background: var(--sunk); color: var(--muted) } .goal.solved { background: var(--good-soft); color: var(--good) }
+.goal.handoff { background: var(--amber-soft); color: var(--amber) } .goal.unresolved { background: var(--bad-soft); color: var(--bad) }
+#l-side .frow { grid-template-columns: minmax(0, 1fr) 30px }
+.reveal summary { cursor: pointer; font-weight: 600; font-size: 14px } .reveal ul { margin-top: 8px; display: grid; gap: 5px; font-size: 14px; color: var(--muted) }
+.gl { border-top: 1px solid var(--line); padding-top: 14px }
+.glog { display: grid; gap: 8px; font-size: 13.5px; color: var(--muted) } .glog b { color: var(--carrier) }
+.meter-line { font-size: 12.5px; color: var(--muted) }
+
 /* scorecard */
 .statement { font: 600 clamp(22px, 3.2vw, 34px)/1.18 var(--head); letter-spacing: -.015em; max-width: 30ch; text-wrap: balance }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 14px; min-width: 0 }
@@ -171,14 +203,42 @@ footer { color: var(--muted); font-size: 13px }
 <header class="top"><div class="shell">
   <div class="logo"><span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>LineAssist</div>
   <div class="nav" role="tablist">
-    <button role="tab" aria-selected="true" data-view="replay">Call replay</button>
+    <button role="tab" aria-selected="true" data-view="live">Try it live</button>
+    <button role="tab" aria-selected="false" data-view="replay">Recorded calls</button>
     <button role="tab" aria-selected="false" data-view="score">Scorecard</button>
     <button role="tab" aria-selected="false" data-view="how">How it's built</button>
   </div>
-  <p class="aside">Recorded benchmark calls. Nothing on this page runs live.</p>
+  <p class="aside">Telecom support agent, measured on tau-bench</p>
 </div></header>
 
-<main class="shell" id="replay">
+<main class="shell" id="live">
+  <section class="lede">
+    <h1>You have a broken phone. Call support.</h1>
+    <p>You are the customer, and the agent on the other end is LineAssist. It can see your account but not your phone, so it will ask you to check and change things. Tap them on the phone, tell it what you see, and find out whether it can fix what is wrong. You can also lie to it, refuse, or ask for things it should not do.</p>
+  </section>
+  <section>
+    <div class="strip-head"><h2>Pick a call</h2><p>Each one starts with different faults on the phone and the account. You are not told what they are.</p></div>
+    <div class="scenarios" id="l-scenarios"></div>
+  </section>
+  <section class="stage">
+    <div class="phone-col">
+      <div class="device"><div class="screen live">
+        <div class="statusbar" id="l-status"><em>Starting the phone…</em></div>
+        <div class="readout" id="l-result"></div>
+        <div class="actions" id="l-actions"></div>
+      </div></div>
+    </div>
+    <div class="talk">
+      <div class="talk-head"><b class="talk-title">Call with LineAssist</b><button class="ghostbtn" id="l-restart">Start this call again</button></div>
+      <div class="thread" id="l-thread" tabindex="0" aria-live="polite"></div>
+      <div class="composer"><textarea id="l-input" rows="2" aria-label="Your message to the agent"></textarea><button id="l-send">Send</button></div>
+    </div>
+    <aside class="faults" id="l-side"></aside>
+  </section>
+  <footer>The phone and the account here are the benchmark's own simulator, running in your browser. The agent uses the same playbook and code checks as the version that was measured, plus a policy check added afterwards. The measured results are on the Scorecard and come from recorded benchmark runs, not from this page.</footer>
+</main>
+
+<main class="shell" id="replay" hidden>
   <section class="lede">
     <h1>A support agent that fixes phones it cannot touch</h1>
     <p>A customer calls with a phone that has up to nine things wrong with it. The agent can see the account but not the phone, so it has to ask the customer to run each check and each fix. Pick a call and watch two agents take it: a standard one, and LineAssist. Both use the same language model.</p>
@@ -302,8 +362,10 @@ const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 document.querySelectorAll(".nav button").forEach(b => b.onclick = () => show(b.dataset.view));
 function show(view) {
   document.querySelectorAll(".nav button").forEach(b => b.setAttribute("aria-selected", b.dataset.view === view));
-  ["replay", "score", "how"].forEach(v => $("#" + v).hidden = v !== view);
+  ["live", "replay", "score", "how"].forEach(v => $("#" + v).hidden = v !== view);
   if (view !== "replay") pause();
+  if (view === "live" && window.LineAssistLive) LineAssistLive.boot().catch(() => {});
+  if (view === "replay" && S.i === 0 && !S.playing && !reduced) play();
   scrollTo(0, 0);
 }
 
@@ -366,7 +428,7 @@ function render() {
 function tick() { if (S.i >= call().steps.length - 1) return pause(); S.i++; render(); schedule(); }
 function schedule() { const s = call().steps[S.i]; const ms = (s.k === "a" || s.k === "c" ? 500 + Math.min(1700, s.t.length * 6) : 450) / S.speed; S.timer = setTimeout(tick, ms); }
 function play() { if (S.i >= call().steps.length - 1) S.i = 0; S.playing = true; render(); schedule(); }
-function pause() { S.playing = false; clearTimeout(S.timer); if (!$("#replay").hidden) render(); }
+function pause() { S.playing = false; clearTimeout(S.timer); render(); }
 $("#play").onclick = () => S.playing ? pause() : play();
 $("#back").onclick = () => { pause(); S.i = Math.max(0, S.i - 1); render(); };
 $("#fwd").onclick = () => { pause(); S.i = Math.min(call().steps.length - 1, S.i + 1); render(); };
@@ -406,7 +468,12 @@ $("#steps").innerHTML = [["Standard agent", "", 22, "s"], ["Add the playbook", "
   ["Add the line check", "Code", 53, ""], ["Add case notes", "Code", 66, ""], ["Two wording fixes", "Phone-side roaming, no suggested top-up amount", 69, ""]]
   .map(([l, sub, v, c]) => `<li><span>${l}<small>${sub}</small></span><span class="meter ${c}"><i style="width:${Math.round(v / 74 * 110)}px"></i>${v}</span></li>`).join("");
 
-load(0, "ours", true);
+load(0, "ours", false);
+</script>
+<script src="live.js"></script>
+<script>
+// Opened as a local file there is no server to reach, so start on the recorded calls instead.
+if (location.protocol === "file:") show("replay"); else LineAssistLive.boot().catch(() => {});
 </script>
 </body>
 </html>

@@ -21,6 +21,10 @@ Two layers on top of a plain tool-calling agent:
    out in code and written next to the tool result the agent reads, instead of leaving
    date and number comparisons to the model.
 
+5. Policy check (added after the held-out test, see README). The provider forbids
+   lifting a suspension when the line's contract has ended. A resume_line call on such
+   a line is withheld in code. The reported test results were produced without it.
+
 Each layer can be switched on separately so its effect can be measured.
 """
 from __future__ import annotations
@@ -96,6 +100,8 @@ class State(BaseModel):
     line_phone: dict[str, str] = {}
     line_blocks: int = 0
     usage_checked: bool = False
+    contract_ended: list[str] = []
+    policy_blocks: int = 0
     facts: dict[str, str] = {}
     notes: list[str] = []
     transferred: bool = False
@@ -133,10 +139,10 @@ def parse_review(text: str) -> Optional[dict]:
 class LineAssistAgent(LLMConfigMixin, HalfDuplexAgent[State]):
     def __init__(self, tools: list[Tool], domain_policy: str, llm: str, llm_args: Optional[dict] = None,
                  playbook: bool = True, guard: bool = True, line_check: bool = True, case_notes: bool = True,
-                 max_blocks: int = 3):
+                 policy_check: bool = False, max_blocks: int = 3):
         super().__init__(tools=tools, domain_policy=domain_policy, llm=llm, llm_args=llm_args)
         self.use_playbook, self.use_guard, self.max_blocks = playbook, guard, max_blocks
-        self.use_line_check, self.use_case_notes = line_check, case_notes
+        self.use_line_check, self.use_case_notes, self.use_policy_check = line_check, case_notes, policy_check
         m = re.search(r"current time is (\d{4}-\d{2}-\d{2})", domain_policy)
         self.today = m.group(1) if m else None
 
@@ -186,6 +192,9 @@ class LineAssistAgent(LLMConfigMixin, HalfDuplexAgent[State]):
                 state.line_ids = [str(x) for x in data["line_ids"]]
             if data.get("line_id") and data.get("phone_number"):
                 state.line_phone[str(data["line_id"])] = str(data["phone_number"])
+                end = str(data.get("contract_end_date") or "")
+                if self.today and end and end < self.today and str(data["line_id"]) not in state.contract_ended:
+                    state.contract_ended.append(str(data["line_id"]))
             note = self._case_note(state, data) if self.use_case_notes else None
             if note:
                 incoming[i] = m.model_copy(update={"content": f"{m.content}\n[case note] {note}"})
@@ -256,6 +265,14 @@ class LineAssistAgent(LLMConfigMixin, HalfDuplexAgent[State]):
                  state.facts.get("data", "Data allowance has NOT been checked (get_data_usage on the customer's line).")]
         return "\n".join(lines)
 
+    def _policy_problem(self, state: State, reply: AssistantMessage) -> Optional[str]:
+        for tc in (reply.tool_calls or []):
+            if tc.name == "resume_line" and str(tc.arguments.get("line_id")) in state.contract_ended:
+                return (f"Not allowed: the contract for line {tc.arguments.get('line_id')} has ended, and policy forbids "
+                        "lifting the suspension on such a line, even after an overdue bill is paid. Finish checking "
+                        "the phone itself, then transfer the customer to a human agent.")
+        return None
+
     def _is_handoff(self, msg: AssistantMessage) -> bool:
         if any(tc.name == "transfer_to_human_agents" for tc in (msg.tool_calls or [])):
             return True
@@ -278,6 +295,17 @@ class LineAssistAgent(LLMConfigMixin, HalfDuplexAgent[State]):
 
         reply = self._call(state)
         hidden_cost = 0.0
+        while self.use_policy_check and state.policy_blocks < 3:
+            problem = self._policy_problem(state, reply)
+            if problem is None:
+                break
+            state.policy_blocks += 1
+            hidden_cost += reply.cost or 0.0
+            logger.info(f"[policy check] call withheld: {problem}")
+            state.messages.append(reply)
+            for tc in reply.tool_calls:
+                state.messages.append(ToolMessage(id=tc.id, role="tool", requestor="assistant", content=problem))
+            reply = self._call(state)
         while self.use_line_check and state.line_blocks < 4:
             problem = self._wrong_line(state, reply)
             if problem is None:
@@ -328,6 +356,7 @@ def _factory(**fixed):
 
 
 registry.register_agent_factory(_factory(), "lineassist")
+registry.register_agent_factory(_factory(policy_check=True), "lineassist_v2")
 registry.register_agent_factory(_factory(guard=False, line_check=False, case_notes=False), "lineassist_playbook")
 registry.register_agent_factory(_factory(guard=False), "lineassist_no_guard")
 registry.register_agent_factory(_factory(case_notes=False), "lineassist_no_case_notes")

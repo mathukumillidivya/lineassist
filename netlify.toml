@@ -1,0 +1,16 @@
+# Hosting for the demo page. The page itself is prebuilt and committed; the only thing
+# Netlify builds is the one server function that talks to the model.
+[build]
+  base = "app"
+  publish = "site"
+  command = "echo 'site is prebuilt'"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"

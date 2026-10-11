@@ -200,3 +200,30 @@ def test_case_note_is_added_to_a_copy_not_the_original(monkeypatch):
     agent.generate_next_message(original, state)
     assert "[case note]" not in original.content
     assert "[case note] This is NOT the customer's line" in state.messages[-2].content
+
+
+# ---- policy check (added after the held-out test) ---------------------------------------------
+
+ENDED = '{"line_id": "L2", "phone_number": "555-000-0002", "status": "Suspended", "contract_end_date": "2025-01-31"}'
+
+
+def test_resuming_a_contract_ended_line_is_withheld(monkeypatch):
+    lookup = call("get_customer_by_phone", phone_number="555-000-0002")
+    agent, state, _ = make(monkeypatch, [lookup, call("get_details_by_id", id="L2"), call("resume_line", customer_id="C1", line_id="L2"),
+                                         say("I need to transfer you.")], [], guard=False, policy_check=True)
+    agent.today = "2025-02-25"
+    out, state = agent.generate_next_message(UserMessage(role="user", content="My number is 555-000-0002"), state)
+    out, state = agent.generate_next_message(result(out, CUSTOMER), state)
+    out, state = agent.generate_next_message(result(out, ENDED), state)
+    assert not out.tool_calls and state.policy_blocks == 1
+    assert "policy forbids" in state.messages[-2].content
+
+
+def test_policy_check_is_off_in_the_tested_configuration(monkeypatch):
+    lookup = call("get_customer_by_phone", phone_number="555-000-0002")
+    agent, state, _ = make(monkeypatch, [lookup, call("get_details_by_id", id="L2"), call("resume_line", customer_id="C1", line_id="L2")], [], guard=False)
+    agent.today = "2025-02-25"
+    out, state = agent.generate_next_message(UserMessage(role="user", content="My number is 555-000-0002"), state)
+    out, state = agent.generate_next_message(result(out, CUSTOMER), state)
+    out, state = agent.generate_next_message(result(out, ENDED), state)
+    assert out.tool_calls[0].name == "resume_line"
