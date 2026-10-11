@@ -1,0 +1,62 @@
+{
+  "baseline": {
+    "run": "../results/runs/test-baseline",
+    "tasks": 40,
+    "trials": 3,
+    "conversations": 120,
+    "pass_rate": 0.4666666666666667,
+    "solved_every_trial": 0.45,
+    "solved_at_least_once": 0.475,
+    "unneeded_handoffs": 0.375,
+    "cost_per_conversation": 0.060121647916666666,
+    "agent_cost_per_conversation": 0.03404634375,
+    "cost_per_solved": 0.12883210267857143,
+    "median_seconds": 60.44402552899999,
+    "median_messages": 50.0
+  },
+  "candidate": {
+    "run": "../results/runs/test-lineassist",
+    "tasks": 40,
+    "trials": 3,
+    "conversations": 120,
+    "pass_rate": 0.975,
+    "solved_every_trial": 0.975,
+    "solved_at_least_once": 0.975,
+    "unneeded_handoffs": 0.0,
+    "cost_per_conversation": 0.05343141541666666,
+    "agent_cost_per_conversation": 0.03031869791666667,
+    "cost_per_solved": 0.054801451709401705,
+    "median_seconds": 41.73957233749991,
+    "median_messages": 47.5
+  },
+  "comparison": {
+    "shared_tasks": 40,
+    "a_pass_ci95": [
+      0.3167,
+      0.6167
+    ],
+    "b_pass_ci95": [
+      0.925,
+      1.0
+    ],
+    "diff_pass_ci95": [
+      0.3333,
+      0.675
+    ],
+    "a_all_ci95": [
+      0.3,
+      0.6
+    ],
+    "b_all_ci95": [
+      0.925,
+      1.0
+    ],
+    "diff_all_ci95": [
+      0.35,
+      0.7
+    ],
+    "tasks_candidate_better": 22,
+    "tasks_candidate_worse": 1,
+    "tasks_same": 17
+  }
+}
