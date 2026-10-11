@@ -11,6 +11,7 @@ on:
       num_tasks: {description: "How many tasks (blank = all in the split)", default: ""}
       num_trials: {default: "1"}
       seed: {default: "300"}
+      cache: {description: "Prompt caching (cuts cost, does not change behaviour)", default: "true"}
 permissions:
   contents: write
 env:
@@ -39,11 +40,16 @@ jobs:
         run: |
           EXTRA=""
           if [ -n "${{ inputs.num_tasks }}" ]; then EXTRA="--num-tasks ${{ inputs.num_tasks }}"; fi
+          ARGS='{"temperature": 0.0}'
+          if [ "${{ inputs.cache }}" = "true" ]; then
+            ARGS='{"temperature": 0.0, "cache_control_injection_points": [{"location": "message", "role": "system"}, {"location": "message", "index": -1}]}'
+          fi
           uv run python ../scripts/run.py run \
             --domain "${{ inputs.domain }}" --agent "${{ inputs.agent }}" \
             --agent-llm "${{ inputs.agent_model }}" --user-llm "${{ inputs.user_model }}" \
             --task-split-name "${{ inputs.split }}" --num-trials "${{ inputs.num_trials }}" \
             --seed "${{ inputs.seed }}" --max-concurrency 4 --timeout 1200 \
+            --agent-llm-args "$ARGS" --user-llm-args "$ARGS" \
             --save-to "${{ inputs.run_id }}" $EXTRA
       - name: Summarise and save
         if: always()
