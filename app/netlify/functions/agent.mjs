@@ -44,15 +44,23 @@ async function countAndCheck(ip) {
   return null;
 }
 
+// Keep only the fields the API defines for each block, whatever the browser sent back.
+function clean(b) {
+  if (b.type === "text") return { type: "text", text: String(b.text ?? "") };
+  if (b.type === "tool_use") return { type: "tool_use", id: String(b.id), name: String(b.name), input: b.input && typeof b.input === "object" ? b.input : {} };
+  return { type: "tool_result", tool_use_id: String(b.tool_use_id), content: typeof b.content === "string" ? b.content : JSON.stringify(b.content ?? ""), ...(b.is_error ? { is_error: true } : {}) };
+}
+
 export function buildRequest(body) {
   const cached = { type: "ephemeral" };
   if (body.mode === "review") {
-    return { model: MODEL, max_tokens: 700, temperature: 0, system: [{ type: "text", text: REVIEW_SYSTEM, cache_control: cached }], messages: body.messages };
+    const messages = body.messages.map(m => ({ role: m.role, content: typeof m.content === "string" ? m.content : m.content.map(clean) }));
+    return { model: MODEL, max_tokens: 700, temperature: 0, system: [{ type: "text", text: REVIEW_SYSTEM, cache_control: cached }], messages };
   }
   const system = [{ type: "text", text: SYSTEM, cache_control: cached }];
   if (body.notes) system.push({ type: "text", text: `<supervisor_notes>\n${body.notes}\n</supervisor_notes>` });
   // Cache the conversation so far as well: mark the last block of the last message.
-  const messages = body.messages.map(m => ({ role: m.role, content: m.content }));
+  const messages = body.messages.map(m => ({ role: m.role, content: typeof m.content === "string" ? m.content : m.content.map(clean) }));
   const last = messages[messages.length - 1];
   if (typeof last.content === "string") last.content = [{ type: "text", text: last.content, cache_control: cached }];
   else last.content = last.content.map((b, i, a) => (i === a.length - 1 ? { ...b, cache_control: cached } : b));
