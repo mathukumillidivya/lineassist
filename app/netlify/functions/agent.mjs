@@ -72,7 +72,9 @@ export default async (req, context) => {
   catch { return json(503, { error: "The live agent is unavailable right now. The recorded calls still work." }); }
   if (limited) return json(429, { error: limited });
 
-  const r = await fetch("https://api.anthropic.com/v1/messages", {
+  // On Netlify, an AI gateway may supply its own key and address; otherwise call the API directly.
+  const base = (process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com").replace(/\/+$/, "");
+  const r = await fetch(`${base}/v1/messages`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-api-key": process.env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
     body: JSON.stringify(buildRequest(body)),
