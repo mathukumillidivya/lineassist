@@ -114,7 +114,8 @@ function phoneAction(name, args, label) {
   S.bar = r.status_bar; S.checks = r.checks;
   row("ct", `You, on the phone <code>${esc(words(name))}</code>`);
   S.asked = (S.asked || []).filter(x => x !== name);
-  drawPhone({ name, label, text: r.content.replace(/\s*Status Bar:.*$/s, "") || "Done." }); drawSide();
+  const body = r.content.replace(/\s*Status Bar:.*$/s, "");
+  drawPhone({ name, label, text: body || r.content || "Done." }); drawSide();
 }
 async function send() {
   const text = $("#l-input").value.trim();
