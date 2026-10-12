@@ -80,7 +80,9 @@ export default async (req, context) => {
   if (!r.ok) {
     const detail = await r.text();
     console.error("model error", r.status, detail.slice(0, 500));
-    return json(502, { error: r.status === 429 || r.status === 529 ? "The model is busy. Try again in a moment." : "The model returned an error. Try again." });
+    let kind = "";
+    try { const e = JSON.parse(detail).error; kind = `${e.type}: ${String(e.message).slice(0, 160)}`; } catch {}
+    return json(502, { error: r.status === 429 || r.status === 529 ? "The model is busy. Try again in a moment." : "The model returned an error. Try again.", detail: kind });
   }
   const out = await r.json();
   return json(200, { content: out.content, stop_reason: out.stop_reason, usage: out.usage });

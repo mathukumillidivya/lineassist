@@ -134,7 +134,7 @@ async function model(mode, messages, notes) {
   try { r = await fetch("/api/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode, messages, notes }) }); }
   catch { throw new Error("The live agent could not be reached. It only runs on the hosted site."); }
   const body = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(body.error || "The live agent is unavailable right now.");
+  if (!r.ok) { console.error("live agent", r.status, body.detail || ""); throw new Error(body.error || "The live agent is unavailable right now."); }
   S.calls++;
   return body.content || [];
 }
