@@ -252,6 +252,9 @@ async function agentTurn() {
     S.messages.push({ role: "assistant", content: content.length ? content : [{ type: "text", text: "(no reply)" }] });
     if (text) bubble("a", text);
     S.asked = PHONE.flatMap(g => g[1]).map(r => r[0]).filter((n, i, a) => a.indexOf(n) === i && new RegExp("\\b" + n + "\\b").test(text));
+    // The agent sometimes describes a step instead of naming it. Point the visitor at the matching control.
+    for (const [re, names] of [[/payment request/i, ["check_payment_request"]], [/(accept|complete|make) (the )?payment|pay (the|your) (overdue )?bill/i, ["make_payment"]],
+                               [/\b(restart|reboot)\b/i, ["reboot_device"]]]) if (re.test(text)) for (const n of names) if (!S.asked.includes(n)) S.asked.push(n);
     if (S.transferred) S.ended = true;
     drawPhone(null);
     return;
