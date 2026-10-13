@@ -1,0 +1,70 @@
+name: extra-evals
+# Evaluations added after the held-out test, kept separate from it (results/runs/test-* are not touched):
+# fresh contract-end scenarios (frozen agent vs the agent with the policy check) and difficult customers.
+on:
+  workflow_dispatch:
+    inputs:
+      parts: {description: "any of: contract difficult", default: "contract difficult"}
+      model: {default: "anthropic/claude-haiku-4-5-20251001"}
+permissions:
+  contents: write
+env:
+  TAU2_COMMIT: 4ce7c0397c1eb65c9bbe59aeacfe1ca44a1cd699
+  # the 8 contract-end tasks in the benchmark's full set that are in neither the development nor the test split
+  FRESH: >-
+    [service_issue]contract_end_suspension[PERSONA:Hard]
+    [service_issue]airplane_mode_on|contract_end_suspension[PERSONA:Easy]
+    [service_issue]break_apn_settings|contract_end_suspension[PERSONA:Easy]
+    [service_issue]airplane_mode_on|contract_end_suspension|unseat_sim_card[PERSONA:Hard]
+    [service_issue]airplane_mode_on|contract_end_suspension|lock_sim_card_pin[PERSONA:Hard]
+    [service_issue]airplane_mode_on|break_apn_settings|contract_end_suspension[PERSONA:Easy]
+    [service_issue]contract_end_suspension|lock_sim_card_pin|unseat_sim_card[PERSONA:Easy]
+    [service_issue]break_apn_settings|contract_end_suspension|unseat_sim_card[PERSONA:None]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      PYTHONPATH: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Get the benchmark at a pinned version
+        run: |
+          git clone https://github.com/sierra-research/tau2-bench.git
+          git -C tau2-bench checkout "$TAU2_COMMIT"
+          cd tau2-bench && uv sync && uv pip install websockets
+      - run: test -n "$ANTHROPIC_API_KEY" || { echo "ANTHROPIC_API_KEY secret is not set"; exit 1; }
+      - name: Run
+        working-directory: tau2-bench
+        run: |
+          set -f   # task ids contain [ ] characters
+          ARGS='{"temperature": 0.0, "cache_control_injection_points": [{"location": "message", "role": "system"}, {"location": "message", "index": -1}]}'
+          run() {  # run_id agent extra-args...
+            id=$1; agent=$2; shift 2
+            uv run python ../scripts/run.py run --domain telecom --agent "$agent" \
+              --agent-llm "${{ inputs.model }}" --user-llm "${{ inputs.model }}" --num-trials 1 --seed 300 \
+              --max-concurrency 4 --timeout 1200 --agent-llm-args "$ARGS" --user-llm-args "$ARGS" --save-to "$id" "$@" || true
+            src="data/simulations/$id/results.json"; out="../results/runs/$id"
+            if [ -f "$src" ]; then python ../scripts/summarize.py "$src" "$out" | head -20; gzip -9 -c "$src" > "$out/results.json.gz"; fi
+          }
+          if [[ "${{ inputs.parts }}" == *contract* ]]; then
+            for a in lineassist lineassist_v2; do run fresh-contract-$a $a --task-split-name full --task-ids $FRESH; done
+          fi
+          if [[ "${{ inputs.parts }}" == *difficult* ]]; then
+            run difficult-lineassist_v2 lineassist_v2 --task-set-name telecom_difficult
+            run difficult-baseline llm_agent --task-set-name telecom_difficult
+          fi
+      - name: Score and save
+        if: always()
+        run: |
+          python scripts/analyze_extra.py \
+            --contract lineassist=results/runs/fresh-contract-lineassist lineassist_v2=results/runs/fresh-contract-lineassist_v2 \
+            --difficult lineassist_v2=results/runs/difficult-lineassist_v2 standard=results/runs/difficult-baseline \
+            --out results/extra_evals.json || true
+          git config user.name "Divya Sri"
+          git config user.email "hellosweety789@gmail.com"
+          git add results/
+          git commit -m "Extra evaluations: ${{ inputs.parts }}" || exit 0
+          git pull --rebase && git push
