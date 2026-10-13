@@ -4,6 +4,9 @@
   base = "app"
   publish = "site"
   command = "echo 'site is prebuilt'"
+  # Deploy only when the page or the function changes (paths are relative to base): each production
+  # deploy uses plan credits.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../netlify.toml"
 
 [functions]
   directory = "netlify/functions"
