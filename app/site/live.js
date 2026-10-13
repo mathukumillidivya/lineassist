@@ -20,8 +20,7 @@ const PHONE = [
   ["Change", [
     ["toggle_airplane_mode", "Airplane mode on or off"], ["toggle_data", "Mobile data on or off"], ["toggle_roaming", "Data roaming on or off"],
     ["toggle_data_saver_mode", "Data Saver on or off"], ["toggle_wifi_calling", "Wi-Fi Calling on or off"], ["disconnect_vpn", "Disconnect VPN"],
-    ["set_network_mode_preference", "Network mode: 4G and 5G preferred", { mode: "4g_5g_preferred" }],
-    ["set_network_mode_preference", "Network mode: 2G only", { mode: "2g_only" }],
+    ["set_network_mode_preference", "Set network mode to 4G and 5G preferred", { mode: "4g_5g_preferred" }],
     ["reseat_sim_card", "Take the SIM out and put it back"], ["reset_apn_settings", "Reset APN settings"],
     ["grant_app_permission", "Give Messaging the storage permission", { app_name: "messaging", permission: "storage" }],
     ["grant_app_permission", "Give Messaging the SMS permission", { app_name: "messaging", permission: "sms" }],
