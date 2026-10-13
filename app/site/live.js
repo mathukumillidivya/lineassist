@@ -55,7 +55,8 @@ function start(n) {
   const sc = bundle.scenarios[n];
   const bar = py.start(JSON.stringify(bundle.db), JSON.stringify(bundle.user_db), JSON.stringify(sc));
   S = { n, sc, messages: [], notes: [], callerPhone: null, lineIds: [], linePhone: {}, usageChecked: false, contractEnded: [], facts: {},
-        blocks: 0, lineBlocks: 0, policyBlocks: 0, reviews: 0, transferred: false, busy: false, ended: false, calls: 0, guardLog: [], bar, checks: [] };
+        blocks: 0, lineBlocks: 0, policyBlocks: 0, reviews: 0, transferred: false, busy: false, ended: false, calls: 0, guardLog: [], bar, checks: [],
+        log: [], tin: 0, tout: 0, cost: 0 };
   S.checks = sim("user", "check_status_bar").checks;   // reading the status bar changes nothing
   $("#l-thread").innerHTML = "";
   bubble("a", "Hi! How can I help you today?");
@@ -65,53 +66,57 @@ function start(n) {
 
 // ---------- rendering
 function drawScenarios() {
-  $("#l-scenarios").innerHTML = bundle.scenarios.map((s, i) => `<button class="scn" aria-pressed="${S && S.n === i}" data-n="${i}"><b>${esc(s.title)}</b><span>${esc(s.blurb)}</span></button>`).join("");
+  $("#l-scenarios").innerHTML = bundle.scenarios.map((s, i) => `<button class="scn" aria-pressed="${!!(S && S.n === i)}" data-n="${i}"><b>${esc(s.title)}</b><span>${esc(s.blurb)}</span></button>`).join("");
   $("#l-scenarios").querySelectorAll("button").forEach(b => b.onclick = () => { if (!S.busy) start(+b.dataset.n); });
 }
-function setPhoneNote(t) { $("#l-status").innerHTML = `<em>${esc(t)}</em>`; }
+function setPhoneNote(t) { $("#l-status").innerHTML = `<span class="tagx mut">${esc(t)}</span>`; }
 function drawPhone(last) {
-  $("#l-status").innerHTML = S.bar.split("|").map(x => `<span>${esc(x.trim())}</span>`).join("");
+  $("#l-status").innerHTML = statusBar(S.bar);
   $("#l-result").innerHTML = last
-    ? `<span class="who-acted">You ran</span><h4>${esc(last.label)}</h4><button class="tell" id="l-tell">Tell the agent what it shows</button><p>${esc(last.text)}</p>`
-    : `<h4>Your phone</h4><p class="hint">When the agent asks you to check or change something, find it in the list and tap it. The result appears here.</p>`;
+    ? `<span class="who">YOU RAN</span><h4>${esc(last.label)}</h4><p>${esc(last.text)}</p><button class="tell" id="l-tell">Tell the agent what it shows</button>`
+    : `<span class="who">YOUR PHONE</span><p>When the agent asks you to check or change something, tap it below. Orange means the agent asked for it.</p>`;
   if (last) $("#l-tell").onclick = () => { $("#l-input").value = `I ran ${last.name}. It shows: ${last.text}`; send(); };
   const asked = S.asked || [];
-  $("#l-actions").innerHTML = PHONE.map(([group, rows]) => `<h5>${group}</h5>` + rows.map(([name, label, args], i) =>
-    `<button class="row${asked.includes(name) ? " asked" : ""}" data-name="${name}" data-args='${esc(JSON.stringify(args || {}))}' data-label="${esc(label)}"><span>${esc(label)}<small>${name}${asked.includes(name) ? " · the agent asked for this" : ""}</small></span></button>`).join("")).join("");
+  $("#l-actions").innerHTML = PHONE.map(([group, rows]) => `<h5>${group === "Check" ? "CHECK" : "CHANGE"}</h5><div class="qs">` + rows.map(([name, label, args], i) =>
+    `<button class="${asked.includes(name) ? "asked" : ""}" data-name="${name}" data-args='${esc(JSON.stringify(args || {}))}' data-label="${esc(label)}">${esc(label)}<small>${name}</small></button>`).join("") + `</div>`).join("");
   $("#l-actions").querySelectorAll("button").forEach(b => b.onclick = () => phoneAction(b.dataset.name, JSON.parse(b.dataset.args), b.dataset.label));
-  const first = $("#l-actions .asked"); if (first) $("#l-actions").scrollTop = first.offsetTop - $("#l-actions").offsetTop - 8;
+  const first = $("#l-actions .asked"); if (first) $("#l-actions").scrollTop = first.offsetTop - $("#l-actions").offsetTop - 30;
 }
 function drawSide() {
   const sc = S.sc, done = S.checks.length && S.checks.every(c => c.met);
   const goal = sc.transfer_expected
     ? (S.transferred ? (done ? ["solved", "Correct. The agent transferred you and left the line suspended."] : ["unresolved", "The agent transferred you, but the account is not in the state policy requires."]) : ["wait", "The right outcome is a transfer to a human, with the line left suspended."])
     : (done ? ["solved", "Fixed. Every benchmark check for this call passes."] : S.transferred ? ["handoff", "The agent transferred you with the problem unfixed."] : ["wait", "Not fixed yet."]);
+  const open = $("#l-side details")?.open;
   $("#l-side").innerHTML =
-    `<h3>You are the customer</h3><p class="role">${esc(sc.known)} ${esc(sc.reason)}</p>` +
+    `<div><span class="k">UNDER THE HOOD</span><h3>What the agent is doing</h3></div>` +
+    `<div class="meters"><div><b>${S.calls}</b><span>model calls</span></div><div><b>${kfmt(S.tin)}</b><span>tokens read</span></div><div><b>$${S.cost.toFixed(3)}</b><span>this call</span></div></div>` +
+    `<div><span class="k">TOOL CALLS AND GUARDRAILS</span><div class="log" id="l-log">${S.log.length ? S.log.map(e => e.g ? `<div class="g"><b>${esc(e.g)}</b> ${esc(e.t)}</div>` : `<div><b>${esc(e.n)}</b>(<span>${esc(e.a)}</span>)${e.r ? `<br><span>→ ${esc(e.r)}</span>` : ""}</div>`).join("") : `<div><span>Nothing yet. Account lookups appear here, and so does every time code steps in: a wrong line, a transfer that came too early, a rule the agent tried to break.</span></div>`}</div></div>` +
     `<div class="goal ${goal[0]}">${esc(goal[1])}</div>` +
-    `<div class="ftable">${S.checks.map(c => `<div class="frow"><span>${esc(sc.check_labels[c.name] || c.name)}</span><span><i class="tick ${c.met ? "on" : "off"}">${c.met ? "✓" : ""}</i></span></div>`).join("")}</div>` +
-    `<details class="reveal"><summary>Show what is wrong with this phone</summary><ul>${sc.faults.map(f => `<li>${esc(f)}</li>`).join("")}</ul></details>` +
-    `<h3 class="gl">What the guardrails did</h3>` +
-    (S.guardLog.length ? `<ul class="glog">${S.guardLog.map(g => `<li><b>${esc(g[0])}</b> ${esc(g[1])}</li>`).join("")}</ul>` : `<p class="role">Nothing yet. Entries appear here when code steps in: a wrong phone line, a transfer that came too early, a rule the agent tried to break.</p>`) +
-    `<p class="meter-line">${S.calls} model call${S.calls === 1 ? "" : "s"} so far in this conversation.</p>`;
+    `<div><span class="k">BENCHMARK CHECKS FOR THIS CALL</span>${S.checks.map(c => `<div class="frow"><span>${esc(sc.check_labels[c.name] || c.name)}</span><span class="tick ${c.met ? "on" : ""}">${c.met ? "✓" : ""}</span></div>`).join("")}</div>` +
+    `<div><span class="k">YOU ARE THE CUSTOMER</span><p class="role">${esc(sc.known)} ${esc(sc.reason)}</p></div>` +
+    `<details class="reveal"${open ? " open" : ""}><summary>Show what is wrong with this phone</summary><ul>${sc.faults.map(f => `<li>${esc(f)}</li>`).join("")}</ul></details>`;
+  const lg = $("#l-log"); if (lg) lg.scrollTop = lg.scrollHeight;
 }
-function bubble(k, text) { add(`<div class="msg ${k}"><small>${k === "a" ? "Agent" : "You"}</small>${rich(text)}</div>`); }
-function row(cls, html) { add(`<div class="act ${cls}">${html}</div>`); }
+function bubble(k, text) { add(`<div class="b ${k}">${rich(text)}</div>`); }
+const ROW = { ct: "tc ct", at: "tc", hand: "tc hand", warn: "warnb", guardrow: "guardb" };
+function row(cls, html) { add(`<div class="${ROW[cls] || cls}">${html}</div>`); }
+const kfmt = n => n >= 1e6 ? (n / 1e6).toFixed(2) + "M" : n >= 1e3 ? (n / 1e3).toFixed(1) + "K" : String(n);
 function add(html) { const t = $("#l-thread"); t.insertAdjacentHTML("beforeend", html); t.scrollTop = t.scrollHeight; }
 function setBusy(b) {
   S.busy = b; $("#l-send").disabled = b || S.ended; $("#l-input").disabled = b || S.ended;
   const old = $("#l-typing"); if (old) old.remove();
-  if (b) add(`<div class="act at" id="l-typing">The agent is working…</div>`);
+  if (b) add(`<div class="typing" id="l-typing"><i></i><i></i><i></i></div>`);
   if (S.ended) $("#l-input").placeholder = "This call has ended. Pick a call to start again.";
 }
-function guard(kind, text) { S.guardLog.push([kind, text]); row("guardrow", `<b>${esc(kind)}.</b> ${esc(text)}`); drawSide(); }
+function guard(kind, text) { S.guardLog.push([kind, text]); S.log.push({ g: kind, t: text }); row("guardrow", `<b>${esc(kind.toUpperCase())}</b>${esc(text)}`); drawSide(); }
 
 // ---------- the customer's side
 function phoneAction(name, args, label) {
   if (!py || S.busy) return;
   const r = sim("user", name, args);
   S.bar = r.status_bar; S.checks = r.checks;
-  row("ct", `You, on the phone <code>${esc(words(name))}</code>`);
+  row("ct", `you ran ${esc(words(name).toLowerCase())}`);
   S.asked = (S.asked || []).filter(x => x !== name);
   const body = r.content.replace(/\s*Status Bar:.*$/s, "");
   drawPhone({ name, label, text: body || r.content || "Done." }); drawSide();
@@ -136,6 +141,10 @@ async function model(mode, messages, notes) {
   const body = await r.json().catch(() => ({}));
   if (!r.ok) { console.error("live agent", r.status, body.detail || ""); throw new Error(body.error || "The live agent is unavailable right now."); }
   S.calls++;
+  const u = body.usage || {}, fresh = u.input_tokens || 0, cr = u.cache_read_input_tokens || 0, cw = u.cache_creation_input_tokens || 0, out = u.output_tokens || 0;
+  S.tin += fresh + cr + cw; S.tout += out;
+  S.cost += (fresh * 1 + cw * 1.25 + cr * 0.1 + out * 5) / 1e6;   // Claude Haiku 4.5 list prices per million tokens
+  drawSide();
   return body.content || [];
 }
 function caseNote(d) {
@@ -235,8 +244,10 @@ async function agentTurn() {
         const r = sim("assistant", tu.name, tu.input);
         S.bar = r.status_bar; S.checks = r.checks;
         const note = r.error ? null : observe(tu, r.content);
-        if (tu.name === "transfer_to_human_agents") { S.transferred = true; row("hand", "The agent transferred you to a human."); }
-        else row("at", `Agent, on the account <code>${esc(words(tu.name))}</code>${tu.input.line_id || tu.input.id ? ` <span>${esc(tu.input.line_id || tu.input.id)}</span>` : ""}`);
+        const argText = Object.entries(tu.input || {}).filter(([k]) => k !== "summary").map(([k, v]) => `${k}=${typeof v === "object" ? JSON.stringify(v) : v}`).join(", ");
+        S.log.push({ n: tu.name, a: argText, r: String(r.content || "").replace(/\s+/g, " ").slice(0, 110) + (note ? " [case note added]" : "") });
+        if (tu.name === "transfer_to_human_agents") { S.transferred = true; row("hand", "transfer_to_human_agents · you were handed to a human"); }
+        else row("at", `${esc(tu.name)}(${esc(argText)})`);
         out.push({ type: "tool_result", tool_use_id: tu.id, content: note ? `${r.content}\n[case note] ${note}` : r.content });
       }
       S.messages.push({ role: "assistant", content }, { role: "user", content: out });

@@ -96,6 +96,7 @@ def conversation(sim: dict, fault_keys: list[str]) -> dict:
         if m["role"] == "tool":
             continue
         who = "a" if m["role"] == "assistant" else "c"
+        first = len(steps)
         text = (m.get("content") or "").replace("###STOP###", "").replace("###TRANSFER###", "").strip()
         if text:
             steps.append({"k": who, "t": clip(text, 900)})
@@ -114,6 +115,10 @@ def conversation(sim: dict, fault_keys: list[str]) -> dict:
                 step["flag2"] = "Handed to a human"
                 step["r"] = clip(args.get("summary", ""), 420)
             steps.append(step)
+        # Tokens for this model call (agent side only), on the first step it produced.
+        usage = (m.get("raw_data") or {}).get("usage") if who == "a" else None
+        if usage and len(steps) > first:
+            steps[first]["u"] = [usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0), usage.get("cache_read_input_tokens") or 0]
     ri = sim["reward_info"]
     expected = [a["action"]["name"] for a in ri.get("action_checks") or []]
     agent_calls = [tc["name"] for m in sim["messages"] if m["role"] == "assistant" for tc in (m.get("tool_calls") or [])]
@@ -127,6 +132,7 @@ def conversation(sim: dict, fault_keys: list[str]) -> dict:
                    for e in ri.get("env_assertions") or []],
         "missed": sorted({a["action"]["name"] for a in ri.get("action_checks") or [] if not a["action_match"]}),
         "cost": round((sim.get("agent_cost") or 0) + (sim.get("user_cost") or 0), 3),
+        "agent_cost": round(sim.get("agent_cost") or 0, 4),
         "secs": round(sim.get("duration") or 0),
         "handoff_expected": "transfer_to_human_agents" in expected,
     }
