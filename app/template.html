@@ -363,6 +363,28 @@ footer { background: var(--ink); color: #9C95BA; font-size: 13.5px; padding: 28p
   .panel { padding: 18px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+:root { --rp-mono: var(--mono); --rp-accent: var(--sig-deep); --rp-dim: var(--ink2); --rp-line: var(--line); --rp-link: var(--sig-deep); --rp-codebg: var(--ink); --rp-codefg: #FFE3D3; --rp-radius: 18px;
+  --rp-hfont: 800 clamp(36px, 4.4vw, 60px)/1 var(--head); --rp-h2font: 800 28px/1.1 var(--head); }
+/* reproduce page: colours come from --rp-* set per site */
+.rp { padding: 48px 0 72px; }
+.rp-k { font: 600 12px var(--rp-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--rp-accent); }
+.rp-h { font: var(--rp-hfont); letter-spacing: -.02em; margin: 10px 0 12px; line-height: 1.04; }
+.rp-lede { color: var(--rp-dim); font-size: 17px; max-width: 46em; }
+.rp-cmd { position: relative; margin: 24px 0 26px; background: var(--rp-codebg); color: var(--rp-codefg); border-radius: var(--rp-radius); max-width: 760px; }
+.rp-cmd pre { margin: 0; padding: 18px 20px; overflow-x: auto; font: 500 14px/1.7 var(--rp-mono); }
+.rp-copy { position: absolute; top: 10px; right: 10px; font: 600 12px var(--rp-mono); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,.35); background: transparent; color: var(--rp-codefg); cursor: pointer; }
+.rp-list { display: grid; gap: 0; border-top: 1px solid var(--rp-line); margin: 0; }
+.rp-list div { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--rp-line); }
+.rp-list dt { font-weight: 700; }
+.rp-list dd { margin: 0; color: var(--rp-dim); overflow-wrap: anywhere; }
+.rp-list a { color: var(--rp-link); }
+.rp-list code { font: 500 13px var(--rp-mono); }
+.rp-video { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 28px; align-items: start; margin-top: 44px; }
+.rp-video h2 { font: var(--rp-h2font); margin: 8px 0; }
+.rp-video p { color: var(--rp-dim); }
+.rp-video video { width: 100%; height: auto; border-radius: var(--rp-radius); background: #000; box-shadow: 0 20px 40px -24px rgba(0,0,0,.6); }
+.rp-foot a { color: inherit; }
+@media (max-width: 760px) { .rp-list div, .rp-video { grid-template-columns: minmax(0, 1fr); gap: 4px; } .rp-video { gap: 14px; } }
 </style>
 </head>
 <body>
@@ -373,6 +395,7 @@ footer { background: var(--ink); color: #9C95BA; font-size: 13.5px; padding: 28p
     <a href="#/race" data-r="race">Agents race</a>
     <a href="#/score" data-r="score">Scorecard</a>
     <a href="#/how" data-r="how">How it's built</a>
+    <a href="#/reproduce" data-r="reproduce">Reproduce</a>
   </nav>
   <span class="meta">tau-bench telecom · 40 held-out calls</span>
 </div></header>
@@ -386,7 +409,7 @@ footer { background: var(--ink); color: #9C95BA; font-size: 13.5px; padding: 28p
         <span class="kicker"><b>●</b> AI support agent · Claude Haiku 4.5 · tau-bench</span>
         <h1>Nine things are wrong with this phone. <em>The agent can't touch it.</em></h1>
         <p class="lede">A customer calls with no data, no service or photos that won't send. LineAssist can see the account but not the phone, so it has to talk the customer through every check and fix. On 40 calls it had never seen, it solved <b id="h-ours"></b>. The standard agent, on the same model, solved <b id="h-base"></b>.</p>
-        <div class="acts"><a class="btn solid" href="#/live"><span class="ring"></span>Take a live call</a><a class="btn" href="#/race">Watch two agents race</a></div>
+        <div class="acts"><a class="btn solid" href="#/live"><span class="ring"></span>Take a live call</a><a class="btn" href="#/race">Watch two agents race</a><a class="btn" href="#/reproduce" onclick="setTimeout(() => document.getElementById('tour')?.scrollIntoView(), 50)">▶ 40-second tour</a></div>
       </div>
       <div class="hero-stage">
         <div class="phone"><div class="notch"></div><div class="scr">
@@ -536,7 +559,9 @@ footer { background: var(--ink); color: #9C95BA; font-size: 13.5px; padding: 28p
   </div>
 </div></main>
 
-<footer><div class="wrap">Benchmark: tau-bench (tau2-bench) by Sierra Research, telecom domain, test split. Agent: Claude Haiku 4.5. Built by Divya Sri.</div></footer>
+<main id="reproduce" hidden></main>
+
+<footer><div class="wrap">Benchmark: tau-bench (tau2-bench) by Sierra Research, telecom domain, test split. Agent: Claude Haiku 4.5. Built by Divya Sri. <span class="rp-foot"><a href="#/reproduce">Reproduce these results</a> · <a href="https://github.com/mathukumillidivya/lineassist" target="_blank" rel="noopener">Source code</a> · <a href="#/reproduce" onclick="setTimeout(() => document.getElementById('tour')?.scrollIntoView(), 50)">Demo video</a></span></div></footer>
 
 <script>
 const DATA = /*DATA*/null;
@@ -581,8 +606,45 @@ function stepHtml(s, fixAt, idx, lane) {
 }
 const stepDelay = s => (s.k === "a" || s.k === "c" ? 650 + Math.min(1500, s.t.length * 5) : 520);
 
+const REPRO = {
+  repo: "https://github.com/mathukumillidivya/lineassist", commit: "aac2c62", time: "a few seconds", install: "",
+  frozen: "The playbook, line check, case notes and hand-off guard were fixed here, from development calls only, before the test split was run once.",
+  dataset: 'tau2-bench by Sierra Research (MIT), telecom domain, 40 held-out test tasks with 3 attempts each, pinned at benchmark commit <code>4ce7c03</code>. The re-scoring needs no benchmark checkout.',
+  raw: [["results/runs/test-lineassist/", "every message, tool call, benchmark check and cost for LineAssist"], ["results/runs/test-baseline/", "the same for the standard agent"]],
+  scoring: [["scripts/compare.py", "pass rates, hand-offs, cost and the task-level bootstrap"], ["scripts/analyze.py", "failure breakdown"], ["reproduce.py", "re-scores the saved conversations and compares"]],
+  rerun: "Against the pinned tau2-bench commit, through the GitHub workflow run-bench (about $14 of API use for both agents).",
+  videoTitle: "A 40-second tour", videoNote: "The home page call, the two agents racing on a nine-fault call, and the scorecard. Recorded from this site.",
+};
+/* ---------- reproduce these results */
+function reproHtml(R) {
+  const gh = p => `${R.repo}/${p.endsWith("/") ? "tree" : "blob"}/main/${p.replace(/\/$/, "")}`;
+  const link = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+  const cmd = `git clone ${R.repo}\ncd ${R.repo.split("/").pop()}\n${R.install ? R.install + "\n" : ""}python reproduce.py`;
+  const rows = [
+    ["Repository", link(R.repo, R.repo.replace("https://", ""))],
+    ["Frozen evaluation commit", `${link(`${R.repo}/tree/${R.commit}`, `<code>${R.commit}</code>`)}. ${R.frozen}`],
+    ["Dataset", R.dataset],
+    ["Raw results", R.raw.map(([p, t]) => `${link(gh(p), `<code>${p}</code>`)} ${t}`).join("<br>")],
+    ["Scoring code", R.scoring.map(([p, t]) => `${link(gh(p), `<code>${p}</code>`)} ${t}`).join("<br>")],
+    ["Re-run from scratch", `${R.rerun} Steps in ${link(gh("REPRODUCE.md"), "REPRODUCE.md")}.`],
+  ];
+  return `<section class="rp"><div class="wrap">
+    <span class="rp-k">Reproduce these results</span>
+    <h1 class="rp-h">Every number here can be checked.</h1>
+    <p class="rp-lede">The figures on this site come from saved runs in the repository. One command re-scores them with the same scoring code and checks each figure against what is published. No API key, ${R.time}.</p>
+    <div class="rp-cmd"><pre><code>${cmd}</code></pre><button class="rp-copy" type="button">Copy</button></div>
+    <dl class="rp-list">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+    <div class="rp-video" id="tour"><div><span class="rp-k">Demo video</span><h2>${R.videoTitle}</h2><p>${R.videoNote}</p></div>
+      <video controls preload="none" playsinline poster="demo-poster.jpg" width="1280" height="720"><source src="demo.mp4" type="video/mp4">Your browser cannot play this video. <a href="demo.mp4">Download it</a>.</video></div>
+  </div></section>`;
+}
+function wireRepro(root) {
+  const b = root.querySelector(".rp-copy"); if (!b) return;
+  b.onclick = async () => { try { await navigator.clipboard.writeText(root.querySelector(".rp-cmd code").textContent); b.textContent = "Copied"; } catch { b.textContent = "Select and copy"; } setTimeout(() => b.textContent = "Copy", 1600); };
+}
+
 /* ---------- router */
-const ROUTES = ["home", "live", "race", "score", "how"];
+const ROUTES = ["home", "live", "race", "score", "how", "reproduce"];
 let raceTimer = null, heroRun = 0;
 function route() {
   const [, r = "", arg] = (location.hash || "#/").split("/");
@@ -593,6 +655,7 @@ function route() {
   if (view === "home") heroPlay(heroRun);
   if (view === "race") { const n = arg === "fail" ? T.findIndex(t => t.ours.pass < t.ours.n) : arg !== undefined && arg !== "" ? +arg : 0; raceLoad(Number.isInteger(n) && T[n] ? n : 0); }
   if (view === "live" && window.LineAssistLive) LineAssistLive.boot().catch(() => {});
+  if (view === "reproduce" && !$("#reproduce").innerHTML) { $("#reproduce").innerHTML = reproHtml(REPRO); wireRepro($("#reproduce")); }
   scrollTo(0, 0);
 }
 addEventListener("hashchange", route);

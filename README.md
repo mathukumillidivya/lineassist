@@ -9,6 +9,8 @@ once. The agent can read and change the account, but it cannot touch the phone: 
 the customer through each check and fix. A conversation passes only if the account and the
 phone end up in the correct state. How the conversation sounded does not count.
 
+**Reproduce:** `python reproduce.py` re-scores every saved run and checks each published number (no API key). Full steps, the frozen commit and the data are in [REPRODUCE.md](REPRODUCE.md). A 40-second demo video is on the site's Reproduce page.
+
 ## Result on held-out tasks
 
 40 test tasks, 3 trials each (120 conversations per agent). Same model for both agents
