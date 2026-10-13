@@ -361,3 +361,4 @@ registry.register_agent_factory(_factory(guard=False, line_check=False, case_not
 registry.register_agent_factory(_factory(guard=False), "lineassist_no_guard")
 registry.register_agent_factory(_factory(case_notes=False), "lineassist_no_case_notes")
 registry.register_agent_factory(_factory(playbook=False), "lineassist_no_playbook")
+registry.register_agent_factory(_factory(line_check=False), "lineassist_no_line_check")

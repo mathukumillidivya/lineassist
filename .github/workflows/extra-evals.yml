@@ -4,7 +4,7 @@ name: extra-evals
 on:
   workflow_dispatch:
     inputs:
-      parts: {description: "any of: contract difficult", default: "contract difficult"}
+      parts: {description: "any of: contract difficult scripted ablation", default: "scripted ablation"}
       model: {default: "anthropic/claude-haiku-4-5-20251001"}
 permissions:
   contents: write
@@ -56,12 +56,25 @@ jobs:
             run difficult-lineassist_v2 lineassist_v2 --task-set-name telecom_difficult
             run difficult-baseline llm_agent --task-set-name telecom_difficult
           fi
+          if [[ "${{ inputs.parts }}" == *scripted* ]]; then
+            run scripted-lineassist_v2 lineassist_v2 --task-set-name telecom_scripted --user scripted_user
+            run scripted-baseline llm_agent --task-set-name telecom_scripted --user scripted_user
+          fi
+          if [[ "${{ inputs.parts }}" == *ablation* ]]; then
+            mapfile -t ABL < ../results/ablation_tasks.txt
+            for a in lineassist_no_guard lineassist_no_line_check lineassist_no_case_notes lineassist_no_playbook; do
+              run ablation-$a $a --task-split-name test --task-ids "${ABL[@]}"
+            done
+          fi
       - name: Score and save
         if: always()
         run: |
           python scripts/analyze_extra.py \
             --contract lineassist=results/runs/fresh-contract-lineassist lineassist_v2=results/runs/fresh-contract-lineassist_v2 \
             --difficult lineassist_v2=results/runs/difficult-lineassist_v2 standard=results/runs/difficult-baseline \
+            --scripted lineassist_v2=results/runs/scripted-lineassist_v2 standard=results/runs/scripted-baseline \
+            --ablation no_guard=results/runs/ablation-lineassist_no_guard no_line_check=results/runs/ablation-lineassist_no_line_check \
+                       no_case_notes=results/runs/ablation-lineassist_no_case_notes no_playbook=results/runs/ablation-lineassist_no_playbook \
             --out results/extra_evals.json || true
           git config user.name "Divya Sri"
           git config user.email "hellosweety789@gmail.com"
