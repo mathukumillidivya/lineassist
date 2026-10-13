@@ -4,6 +4,7 @@ The page replays recorded conversations. It makes no API calls and contains no k
 Usage: python scripts/build_demo.py
 """
 import gzip
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -161,6 +162,9 @@ def main() -> None:
         t["id"] = i
     data = {"tasks": ordered, "comparison": json.loads((ROOT / "results/test_comparison.json").read_text())}
     html = (ROOT / "app/template.html").read_text().replace("/*DATA*/null", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))
+    # Version the script URL so a browser never pairs a new page with an old cached live.js.
+    live = hashlib.sha256((ROOT / "app/site/live.js").read_bytes()).hexdigest()[:10]
+    html = html.replace('<script src="live.js"></script>', f'<script src="live.js?v={live}"></script>')
     out = ROOT / "app/site/index.html"
     out.write_text(html)
     print(f"{out} written: {len(ordered)} tasks, {out.stat().st_size / 1e6:.2f} MB")
