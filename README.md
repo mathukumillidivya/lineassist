@@ -23,6 +23,11 @@ phone end up in the correct state. How the conversation sounded does not count.
 | Cost per solved conversation | $0.129 | $0.055 |
 | Median conversation time | 60 s | 42 s |
 
+**Escalation stays available.** The aim is no *unnecessary* hand-offs, not no hand-offs. In the 12 test
+calls where policy requires a human (a contract that has ended, a SIM locked by PIN), the correct outcome is a
+transfer: LineAssist handled these correctly, transfer included, in 33 of 36 attempts, and the standard agent in 33 of 36. The hand-off guard allows
+transfers the playbook requires, overrules the agent at most three times per call, and fails open.
+
 The difference in pass rate is 51 points (95% interval 33 to 68, resampling tasks rather than
 conversations). LineAssist did better on 22 tasks, worse on 1, the same on 17.
 

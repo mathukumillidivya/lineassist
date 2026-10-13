@@ -420,7 +420,7 @@ footer { background: var(--ink); color: #9C95BA; font-size: 13.5px; padding: 28p
       <div class="layer add"><span class="ty">PROMPT</span><h3>Playbook</h3><p>The provider's manual as one ordered checklist per problem, with a rule to keep going until the phone passes.</p><p class="why">Answers: <b>gives up early</b></p></div>
       <div class="layer add"><span class="ty">CODE</span><h3>Line check</h3><p>A tool call on a line whose number isn't the customer's is withheld, and the agent is told which lines are left.</p><p class="why">Answers: <b>wrong line</b></p></div>
       <div class="layer add"><span class="ty">CODE</span><h3>Case notes</h3><p>Facts that follow from account data are worked out in code and written beside the tool result.</p><p class="why">Answers: <b>missed top-up</b></p></div>
-      <div class="layer add"><span class="ty">SECOND MODEL CALL</span><h3>Hand-off guard</h3><p>Before a transfer, a reviewer lists checks not done. Any left, and the transfer is withheld. Three overrules at most.</p><p class="why">Answers: <b>gives up early</b></p></div>
+      <div class="layer add"><span class="ty">SECOND MODEL CALL</span><h3>Hand-off guard</h3><p>Before a transfer, a reviewer lists checks not done. Any left, and the transfer is withheld. It allows transfers the policy requires, overrules at most three times, and fails open, so escalation stays available.</p><p class="why">Answers: <b>gives up early</b></p></div>
     </div>
   </div></section>
 
@@ -516,7 +516,7 @@ footer { background: var(--ink); color: #9C95BA; font-size: 13.5px; padding: 28p
     <div class="layer add"><span class="ty">CODE</span><h3>Case notes</h3><p>Is this the customer's line, has the contract ended, is the data allowance used up: worked out and attached.</p></div>
     <div class="layer add"><span class="ty">PROMPT</span><h3>Playbook</h3><p>The model drafts its next move from the provider's manual, reorganised into one ordered checklist per problem.</p></div>
     <div class="layer add"><span class="ty">CODE</span><h3>Line check</h3><p>If the draft acts on a line whose number is not the customer's, it is withheld and the agent is told which lines are left.</p></div>
-    <div class="layer add"><span class="ty">SECOND MODEL CALL</span><h3>Hand-off guard</h3><p>If the draft passes the customer to a human, a reviewer lists checks not yet done. Any left, and the transfer is withheld.</p></div>
+    <div class="layer add"><span class="ty">SECOND MODEL CALL</span><h3>Hand-off guard</h3><p>If the draft passes the customer to a human, a reviewer lists checks not yet done. Any left, and the transfer is withheld. Transfers the policy requires are allowed, and after three overrules the agent's choice stands.</p></div>
   </div>
   <div class="split">
     <section class="panel">
@@ -603,10 +603,14 @@ const tot = a => [sum(t => t[a].pass), sum(t => t[a].n)];
 const [bp, bn] = tot("base"), [op, on] = tot("ours");
 const count = (a, o) => sum(t => t[a].trials.filter(x => x === o).length);
 $("#h-ours").textContent = `${op} of ${on}`; $("#h-base").textContent = `${bp}`;
+// Calls whose correct outcome is a transfer (contract ended, SIM locked by PIN): escalation must stay available.
+const need = T.filter(t => t.ours.call.handoff_expected), needN = need.reduce((a, t) => a + t.ours.n, 0);
+const needOk = a => `${need.reduce((x, t) => x + t[a].pass, 0)} of ${needN} attempts`;
+const esc_ = x => String(x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const hard = T.filter(t => t.faults.length >= 7), hs = a => hard.reduce((x, t) => x + t[a].pass, 0), hn = hard.reduce((x, t) => x + t.ours.n, 0);
 $("#h-strip").innerHTML = [
   [`${(op / on * 100).toFixed(1)}%<s>vs ${(bp / bn * 100).toFixed(0)}%</s>`, "of held-out calls solved, against the standard agent on the same model"],
-  [`${count("ours", "handoff")}<s>vs ${count("base", "handoff")}</s>`, "calls handed to a human while a fix was still available"],
+  [`${count("ours", "handoff")}<s>vs ${count("base", "handoff")}</s>`, `unnecessary hand-offs. Necessary ones are kept: when policy required a human, it handled the call correctly, transfer included, in ${esc_(needOk("ours"))}`],
   [`$${C.candidate.cost_per_solved.toFixed(3)}<s>vs $${C.baseline.cost_per_solved.toFixed(3)}</s>`, "per solved call, including the simulated customer"],
   [`${Math.round(C.candidate.median_seconds)}s<s>vs ${Math.round(C.baseline.median_seconds)}s</s>`, "typical call length, end to end"],
 ].map(([b, s]) => `<div><b>${b}</b><span>${s}</span></div>`).join("");
@@ -706,6 +710,7 @@ const usd = v => "$" + v.toFixed(3);
 $("#numbers").innerHTML = `<thead><tr><th></th><th>STANDARD</th><th>LINEASSIST</th></tr></thead><tbody>` + [
   ["Attempts solved", `${bp} of ${bn}`, `${op} of ${on}`], ["Calls solved on all three attempts", `${all3("base")} of 40`, `${all3("ours")} of 40`],
   ["Transferred while a fix was available", count("base", "handoff"), count("ours", "handoff")],
+  [`Correct transfer when policy required one (${need.length} calls)`, needOk("base"), needOk("ours")],
   ["Cost per attempt", usd(C.baseline.cost_per_conversation), usd(C.candidate.cost_per_conversation)],
   ["Cost per solved attempt", usd(C.baseline.cost_per_solved), usd(C.candidate.cost_per_solved)],
   ["Typical length of a call", Math.round(C.baseline.median_seconds) + " s", Math.round(C.candidate.median_seconds) + " s"],
