@@ -224,7 +224,7 @@ async function agentTurn() {
       const pol = S.policyBlocks < 3 ? policyProblem(uses) : null;
       if (pol) { S.policyBlocks++; S.messages.push({ role: "assistant", content }, results(uses, pol)); guard("Policy check", "The agent tried to reactivate a line whose contract has ended. The call was not made."); continue; }
       const wl = S.lineBlocks < 4 ? wrongLine(uses) : null;
-      if (wl) { S.lineBlocks++; S.messages.push({ role: "assistant", content }, results(uses, wl.note)); guard("Line check", `The agent tried to use ${words(wl.tool).toLowerCase()} on ${wl.line}, which is not your line. The call was not made.`); continue; }
+      if (wl) { S.lineBlocks++; S.messages.push({ role: "assistant", content }, results(uses, wl.note)); guard("Line check", S.linePhone[wl.line] ? `The agent tried to use ${words(wl.tool).toLowerCase()} on ${wl.line}, which belongs to a different number. The call was not made.` : `The agent tried to use ${words(wl.tool).toLowerCase()} on ${wl.line} before confirming that line is yours. The call was held until it checked.`); continue; }
       if (isTransfer && S.blocks < 3 && S.reviews < 6) {
         const v = await review(content);
         if (v && !v.allow && v.remaining.length) { S.blocks++; S.messages.push({ role: "assistant", content }, results(uses, blockedNote(v))); guard("Hand-off guard", `The agent tried to transfer you. A reviewer found ${v.remaining.length} check${v.remaining.length === 1 ? "" : "s"} not done yet, so the transfer was withheld.`); continue; }

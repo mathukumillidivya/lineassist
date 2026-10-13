@@ -113,6 +113,8 @@ is the claim.
 
 ## Live demo
 
+**https://beamish-panda-3dc0a0.netlify.app**
+
 `app/` holds a page where a visitor plays the customer: they get a phone with hidden faults,
 talk to LineAssist, and tap checks and fixes on the phone as the agent asks for them.
 
