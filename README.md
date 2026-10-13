@@ -158,7 +158,7 @@ silent after two instructions. One attempt each, 12 calls.
 
 ## Live demo
 
-**https://lineassist-app.netlify.app**
+**https://lineassist-app.onrender.com**
 
 `app/` holds a page where a visitor plays the customer: they get a phone with hidden faults,
 talk to LineAssist, and tap checks and fixes on the phone as the agent asks for them.
@@ -169,13 +169,15 @@ talk to LineAssist, and tap checks and fixes on the phone as the agent asks for 
   benchmark's environment and found identical results.
 - **The agent's layers run on the page**, as a JavaScript port of `lineassist/agent.py`, and
   each intervention is shown to the visitor as it happens.
-- **One server function** (`app/netlify/functions/agent.mjs`) reaches the model. It holds the
-  system prompt and tool definitions itself, accepts only a conversation from the browser,
-  limits requests per visitor and per day, and fails closed if it cannot count them.
+- **One small server** reaches the model (`app/server.mjs` on Render, wrapping the same rules as
+  the Netlify function `app/netlify/functions/agent.mjs`). It holds the system prompt and tool
+  definitions itself, accepts only a conversation from the demo page, and limits requests per
+  visitor and per day. The free Render service sleeps when idle, so the first live call can take
+  up to a minute to start.
 - **It includes a policy check that the measured agent did not have**: a `resume_line` call on
   a line whose contract has ended is withheld in code. This is the fix for the test failure
-  described above. It is unit-tested but has not been run on the benchmark, so the reported
-  results do not include it (`lineassist_v2` is the agent name that enables it).
+  described above. The held-out results do not include it; it was tested afterwards on 8 fresh
+  contract-end calls (see "Checked after the test"; `lineassist_v2` is the agent name).
 
 The demo shows the agent working; it is not evidence of how well it works. The evidence is the
 recorded test runs.

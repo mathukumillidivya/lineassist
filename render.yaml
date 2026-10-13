@@ -1,0 +1,49 @@
+# Render hosting (the demo moved here from Netlify). Two services:
+#   lineassist-app  the prebuilt page (app/site), redeployed only when it changes
+#   lineassist-api  the live agent's server (app/server.mjs); the API key is set in Render, never in the repo
+services:
+  - type: web
+    name: lineassist-api
+    runtime: node
+    plan: free
+    branch: main
+    rootDir: app
+    buildCommand: npm ci --omit=dev
+    startCommand: node server.mjs
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - app/server.mjs
+        - app/netlify/**
+        - app/package.json
+        - app/package-lock.json
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://lineassist-app.onrender.com,https://lineassist-app.netlify.app
+      - key: DAILY_LIMIT
+        value: "1200"
+      - key: VISITOR_LIMIT
+        value: "150"
+
+  - type: web
+    name: lineassist-app
+    runtime: static
+    branch: main
+    buildCommand: echo "page is prebuilt by scripts/build_demo.py"
+    staticPublishPath: ./app/site
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - app/site/**
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer

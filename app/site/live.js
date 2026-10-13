@@ -133,10 +133,12 @@ async function send() {
   setBusy(false); drawSide();
 }
 
+// On Netlify the function shares the page's address; on Render the agent runs as its own service.
+const API = location.hostname.endsWith("netlify.app") ? "" : "https://lineassist-api.onrender.com";
 // ---------- LineAssist: the same four layers as the benchmarked agent, plus the policy check
 async function model(mode, messages, notes) {
   let r;
-  try { r = await fetch("/api/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode, messages, notes }) }); }
+  try { r = await fetch(API + "/api/agent", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mode, messages, notes }) }); }
   catch { throw new Error("The live agent could not be reached. It only runs on the hosted site."); }
   const body = await r.json().catch(() => ({}));
   if (!r.ok) { console.error("live agent", r.status, body.detail || ""); throw new Error(body.error || "The live agent is unavailable right now."); }
