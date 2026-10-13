@@ -161,6 +161,10 @@ def main() -> None:
     for i, t in enumerate(ordered):
         t["id"] = i
     data = {"tasks": ordered, "comparison": json.loads((ROOT / "results/test_comparison.json").read_text())}
+    extra = ROOT / "results/extra_evals.json"
+    if extra.exists():  # evaluations added after the held-out test, reported separately
+        data["extra"] = {sec: {k: {kk: vv for kk, vv in v.items() if kk != "rows"} for k, v in d.items()}
+                         for sec, d in json.loads(extra.read_text()).items()}
     html = (ROOT / "app/template.html").read_text().replace("/*DATA*/null", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))
     # Version the script URL so a browser never pairs a new page with an old cached live.js.
     live = hashlib.sha256((ROOT / "app/site/live.js").read_bytes()).hexdigest()[:10]

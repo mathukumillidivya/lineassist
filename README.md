@@ -53,8 +53,9 @@ bill and resumed the line anyway, and then told the customer they were being tra
 without actually making the transfer. That is a policy violation, not a near miss. The case note
 for that line states that the contract has ended and the line must not be resumed (see case
 notes below), and the agent acted against it. The fix is to
-enforce the rule in code on the `resume_line` call, the same way the line check works. It has
-not been made, because the test split had already been seen.
+enforce the rule in code on the `resume_line` call, the same way the line check works. It was
+not applied to the measured agent, because the test split had already been seen. It was added
+afterwards (`lineassist_v2`) and tested on fresh calls, reported separately below.
 
 ## Why the standard agent fails
 
@@ -98,6 +99,42 @@ performance and the steps are noisy. Two pilot runs of the same agent on the sam
 failed a different task. The table shows where the gains came from; the held-out result above
 is the claim.
 
+## Checked after the test
+
+Separate runs (`.github/workflows/extra-evals.yml`, scored by `scripts/analyze_extra.py` into
+[results/extra_evals.json](results/extra_evals.json)). The held-out results above are unchanged. Cost: $1.45.
+
+**The contract rule, on 8 fresh calls.** Every contract-end task in the benchmark's full set that is in neither the
+development nor the test split. The right outcome is always: leave the line suspended and transfer to a human.
+
+| | Solved | Transferred to a human | Lifted a suspension it must not |
+|---|---|---|---|
+| LineAssist as measured (`lineassist`) | 5 of 8 | 5 of 8 | 3 |
+| **With the policy check (`lineassist_v2`)** | **8 of 8** | **8 of 8** | **0** |
+
+The measured agent repeats its test failure on new calls (3 of 8), so the failure was not a one-off. The check
+removes it and leaves escalation open: every call still reached a human.
+
+**Difficult customers, a small probe** ([lineassist/difficult.py](lineassist/difficult.py)). Two held-out calls
+LineAssist always solved, replayed with a customer who mixes up instructions, answers wrongly before checking, or goes
+silent after two instructions. One attempt each, 12 calls.
+
+| | Misunderstands | Contradicts | Goes silent | Transferred |
+|---|---|---|---|---|
+| Standard agent | 0 of 2 | 0 of 2 | 0 of 2 | 5 of 6 |
+| **LineAssist** | **2 of 2** | **2 of 2** | **2 of 2** | **0 of 6** |
+
+- **Read this as "not derailed", not as "handles confusion".** The simulated customer acted out its script in the
+  standard agent's calls (looking at the wrong screen, giving a wrong first answer) but hardly at all in LineAssist's,
+  whose instructions name the exact phone action and leave little room to misread. The standard agent solves one of
+  these two calls with an ordinary customer and fails the other.
+- **When the customer went silent,** both agents waited and asked again, made no change to the account and never said
+  the problem was fixed. In LineAssist's two calls the silence came after the faults were already fixed, so the
+  hardest moment (silence mid-fix) was not tested.
+- **Escalation.** No unnecessary hand-offs from LineAssist in these calls, against five from the standard agent, none
+  of them needed. With the 8 fresh contract calls, the agent with the policy check transferred every time a transfer
+  was required and never when it was not.
+
 ## What this does not show
 
 - **The hand-off guard has not earned its place.** It added one task in development, which is
@@ -113,8 +150,9 @@ is the claim.
   Only the comparison between the two agents is meaningful.
 - **One model.** Everything was run with Claude Haiku 4.5. A stronger model would likely narrow
   the gap from the baseline side.
-- **A simulated customer is not a real one.** The simulator always has its phone, always
-  eventually cooperates, and never misreads a screen.
+- **A simulated customer is not a real one.** In the test the simulator always has its phone,
+  always eventually cooperates, and never misreads a screen. The difficult-customer probe above
+  is small, and the simulator did not always act out its script.
 - **Three trials.** Enough to see that failures are consistent per task, not enough to
   estimate rare failures.
 

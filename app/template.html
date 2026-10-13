@@ -515,15 +515,16 @@ footer { background: var(--ink); color: #9C95BA; font-size: 13.5px; padding: 28p
     <div class="fail">
       <p><b>All three of its failures are the same call, and it is a rule violation.</b></p>
       <p>The line was suspended because its contract had ended. Policy says an agent must not lift that suspension. LineAssist took payment for an overdue bill and reactivated the line anyway.</p>
-      <p>The fix is to enforce the rule in code, the way the line check works. It has not been applied to the measured agent: changing it after seeing the test calls would make these results dishonest.</p>
+      <p>The fix is to enforce the rule in code, the way the line check works. It was not applied to the measured agent: changing it after seeing the test calls would make these results dishonest. It was added afterwards and tested on calls neither version had seen (below).</p>
       <p><a class="link" href="#/race/fail">Replay that call</a></p>
     </div>
   </section>
+  <section class="panel" id="extra" hidden></section>
   <section class="panel">
     <h3>What these results do not show</h3>
     <ul class="plain">
       <li><b>New combinations, not new problems.</b> The test calls mix the same kinds of fault as the development calls, in different sets, on the same customer account.</li>
-      <li><b>The customer is simulated.</b> It always has its phone, always cooperates in the end, and never misreads a screen.</li>
+      <li><b>The customer is simulated.</b> In the test it always has its phone, always cooperates in the end, and never misreads a screen. The difficult-customer probe above is small, and the simulator did not always act out its script.</li>
       <li><b>Not comparable to the public leaderboard.</b> Both agents talked to a lower-cost customer simulator than published results use. Only the comparison between the two agents holds.</li>
       <li><b>One model.</b> Every call used Claude Haiku 4.5. A stronger model would start from a higher baseline.</li>
       <li><b>The four layers are not separated.</b> They were added one after another and never removed one at a time, so the share each contributes is not isolated.</li>
@@ -770,6 +771,26 @@ $("#matrix").innerHTML = [["base", "Standard agent", bp], ["ours", "LineAssist",
   order.map(n => `<a class="col" href="#/race/${n}" aria-label="${esc(T[n].issue)}, ${T[n].faults.length} faults, ${T[n][a].pass} of 3 solved">${T[n][a].trials.map(o => `<i class="dot ${o}"></i>`).join("")}</a>`).join("") + `</div></div>`).join("");
 const all3 = a => T.filter(t => t[a].pass === t[a].n).length;
 const usd = v => "$" + v.toFixed(3);
+(() => { const X = DATA.extra, el = $("#extra"); if (!X || !el) return;
+  const C = X.fresh_contract_end || {}, D = X.difficult_customers || {}, a = C.lineassist, b = C.lineassist_v2;
+  const dd = (k, x) => x ? `${x.by_customer[k].passed} of ${x.by_customer[k].conversations}` : "–", tr = x => x ? Object.values(x.by_customer).reduce((n, v) => n + v.transferred, 0) : "–";
+  el.hidden = false;
+  el.innerHTML = `<h3>Checked after the test</h3><p>Separate runs on calls neither agent had seen. The held-out results above are unchanged.</p>
+  <h4 style="margin:14px 0 6px">The contract rule, on 8 fresh calls</h4>
+  <p>Every contract-end call in the benchmark's full set that is in neither the development nor the test split. The right outcome is always a transfer to a human, with the line left suspended.</p>
+  <div style="overflow-x:auto"><table><thead><tr><th></th><th>Solved</th><th>Transferred to a human</th><th>Lifted a suspension it must not</th></tr></thead><tbody>
+  ${a ? `<tr><td>LineAssist as measured</td><td>${a.passed} of ${a.conversations}</td><td>${a.transferred} of ${a.conversations}</td><td>${a.resumed_a_line_whose_contract_ended}</td></tr>` : ""}
+  ${b ? `<tr><td><b>With the policy check</b></td><td><b>${b.passed} of ${b.conversations}</b></td><td><b>${b.transferred} of ${b.conversations}</b></td><td><b>${b.resumed_a_line_whose_contract_ended}</b></td></tr>` : ""}</tbody></table></div>
+  <p>The check blocks one action and leaves escalation open: every one of these calls still reached a human.</p>
+  <h4 style="margin:18px 0 6px">Difficult customers, a small probe</h4>
+  <p>Two held-out calls LineAssist always solved, replayed with a customer who mixes up instructions, answers wrongly before checking, or goes silent. One attempt each.</p>
+  <div style="overflow-x:auto"><table><thead><tr><th></th><th>Misunderstands</th><th>Contradicts</th><th>Goes silent</th><th>Transferred</th></tr></thead><tbody>
+  <tr><td>Standard agent</td><td>${dd("misunderstands", D.standard)}</td><td>${dd("contradicts", D.standard)}</td><td>${dd("goes_silent", D.standard)}</td><td>${tr(D.standard)} of 6</td></tr>
+  <tr><td><b>LineAssist</b></td><td><b>${dd("misunderstands", D.lineassist_v2)}</b></td><td><b>${dd("contradicts", D.lineassist_v2)}</b></td><td><b>${dd("goes_silent", D.lineassist_v2)}</b></td><td><b>${tr(D.lineassist_v2)} of 6</b></td></tr></tbody></table></div>
+  <ul class="plain" style="margin-top:10px">
+    <li><b>Read this as “not derailed”, not as “handles confusion”.</b> The simulated customer acted out its script in the standard agent's calls (wrong screens, wrong first answers) but hardly at all in LineAssist's, whose instructions name the exact phone action and leave little room to misread. The standard agent solves one of these calls with an ordinary customer and fails the other.</li>
+    <li><b>When the customer went silent,</b> both agents waited and asked again, made no change to the account, and never said the problem was fixed. In LineAssist's two calls the silence came after the faults were already fixed, so it was not tested at the hardest moment.</li>
+    <li><b>No unnecessary hand-offs from LineAssist</b> in these calls, against ${tr(D.standard)} from the standard agent, none of them needed.</li></ul>`; })();
 $("#numbers").innerHTML = `<thead><tr><th></th><th>STANDARD</th><th>LINEASSIST</th></tr></thead><tbody>` + [
   ["Attempts solved", `${bp} of ${bn}`, `${op} of ${on}`], ["Calls solved on all three attempts", `${all3("base")} of 40`, `${all3("ours")} of 40`],
   ["Transferred while a fix was available", count("base", "handoff"), count("ours", "handoff")],
