@@ -1,0 +1,287 @@
+{
+ "fresh_contract_end": {
+  "lineassist": {
+   "conversations": 8,
+   "passed": 5,
+   "transferred": 5,
+   "resumed_a_line_whose_contract_ended": 3,
+   "said_transfer_without_doing_it": 0,
+   "rows": [
+    {
+     "task": "[service_issue]contract_end_suspension[PERSONA:Hard]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|contract_end_suspension|unseat_sim_card[PERSONA:Hard]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|contract_end_suspension|lock_sim_card_pin[PERSONA:Hard]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]break_apn_settings|contract_end_suspension[PERSONA:Easy]",
+     "passed": false,
+     "transferred": false,
+     "resumed_line": true,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|contract_end_suspension[PERSONA:Easy]",
+     "passed": false,
+     "transferred": false,
+     "resumed_line": true,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]break_apn_settings|contract_end_suspension|unseat_sim_card[PERSONA:None]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|break_apn_settings|contract_end_suspension[PERSONA:Easy]",
+     "passed": false,
+     "transferred": false,
+     "resumed_line": true,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]contract_end_suspension|lock_sim_card_pin|unseat_sim_card[PERSONA:Easy]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    }
+   ]
+  },
+  "lineassist_v2": {
+   "conversations": 8,
+   "passed": 8,
+   "transferred": 8,
+   "resumed_a_line_whose_contract_ended": 0,
+   "said_transfer_without_doing_it": 0,
+   "rows": [
+    {
+     "task": "[service_issue]contract_end_suspension[PERSONA:Hard]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|contract_end_suspension|unseat_sim_card[PERSONA:Hard]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|contract_end_suspension|lock_sim_card_pin[PERSONA:Hard]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]break_apn_settings|contract_end_suspension[PERSONA:Easy]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|contract_end_suspension[PERSONA:Easy]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]break_apn_settings|contract_end_suspension|unseat_sim_card[PERSONA:None]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]contract_end_suspension|lock_sim_card_pin|unseat_sim_card[PERSONA:Easy]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|break_apn_settings|contract_end_suspension[PERSONA:Easy]",
+     "passed": true,
+     "transferred": true,
+     "resumed_line": false,
+     "said_transfer_without_doing_it": false
+    }
+   ]
+  }
+ },
+ "difficult_customers": {
+  "lineassist_v2": {
+   "by_customer": {
+    "misunderstands": {
+     "conversations": 2,
+     "passed": 2,
+     "transferred": 0
+    },
+    "contradicts": {
+     "conversations": 2,
+     "passed": 2,
+     "transferred": 0
+    },
+    "goes_silent": {
+     "conversations": 2,
+     "passed": 2,
+     "transferred": 0,
+     "went_silent": 2,
+     "account_changes_while_silent": 0,
+     "claimed_fixed_while_silent": 0
+    }
+   },
+   "rows": [
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:contradicts]",
+     "kind": "contradicts",
+     "passed": true,
+     "transferred": false,
+     "messages": 30
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:misunderstands]",
+     "kind": "misunderstands",
+     "passed": true,
+     "transferred": false,
+     "messages": 32
+    },
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:misunderstands]",
+     "kind": "misunderstands",
+     "passed": true,
+     "transferred": false,
+     "messages": 31
+    },
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:goes_silent]",
+     "kind": "goes_silent",
+     "passed": true,
+     "transferred": false,
+     "messages": 33,
+     "went_silent": true,
+     "account_changes_while_silent": [],
+     "transferred_while_silent": false,
+     "agent_messages_while_silent": 3,
+     "claimed_fixed_while_silent": false,
+     "last_agent_message": "John, I'm still standing by to help. Whenever you're ready, please run the **run_speed_test** on your phone and let me know what the results show. I'll be here!"
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:contradicts]",
+     "kind": "contradicts",
+     "passed": true,
+     "transferred": false,
+     "messages": 31
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:goes_silent]",
+     "kind": "goes_silent",
+     "passed": true,
+     "transferred": false,
+     "messages": 38,
+     "went_silent": true,
+     "account_changes_while_silent": [],
+     "transferred_while_silent": false,
+     "agent_messages_while_silent": 3,
+     "claimed_fixed_while_silent": false,
+     "last_agent_message": "John, I'm still here and ready to help. When you're ready, please run **toggle_airplane_mode** on your phone to turn off Airplane Mode, and then tell me exactly what your status bar shows. I'll be waiting for your response."
+    }
+   ]
+  },
+  "standard": {
+   "by_customer": {
+    "misunderstands": {
+     "conversations": 2,
+     "passed": 0,
+     "transferred": 2
+    },
+    "contradicts": {
+     "conversations": 2,
+     "passed": 0,
+     "transferred": 2
+    },
+    "goes_silent": {
+     "conversations": 2,
+     "passed": 0,
+     "transferred": 1,
+     "went_silent": 1,
+     "account_changes_while_silent": 0,
+     "claimed_fixed_while_silent": 0
+    }
+   },
+   "rows": [
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:goes_silent]",
+     "kind": "goes_silent",
+     "passed": false,
+     "transferred": true,
+     "messages": 37,
+     "went_silent": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:misunderstands]",
+     "kind": "misunderstands",
+     "passed": false,
+     "transferred": true,
+     "messages": 36
+    },
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:contradicts]",
+     "kind": "contradicts",
+     "passed": false,
+     "transferred": true,
+     "messages": 64
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:goes_silent]",
+     "kind": "goes_silent",
+     "passed": false,
+     "transferred": false,
+     "messages": 30,
+     "went_silent": true,
+     "account_changes_while_silent": [],
+     "transferred_while_silent": false,
+     "agent_messages_while_silent": 2,
+     "claimed_fixed_while_silent": false,
+     "last_agent_message": "John, are you still there? I'm waiting to hear from you about the payment for the second bill so I can restore your service. Just let me know once you've completed the payment for B1234321 ($65.00), and I'll immediately resume your line."
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:contradicts]",
+     "kind": "contradicts",
+     "passed": false,
+     "transferred": true,
+     "messages": 48
+    },
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:misunderstands]",
+     "kind": "misunderstands",
+     "passed": false,
+     "transferred": true,
+     "messages": 201
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,9 @@
+task_id,trial,passed,reward,termination,duration_s,agent_cost,user_cost,messages,tool_calls
+[service_issue]contract_end_suspension[PERSONA:Hard],0,1,1.0,user_stop,18.7,0.0141168,0.0038916000000000003,18,5
+[service_issue]airplane_mode_on|contract_end_suspension|unseat_sim_card[PERSONA:Hard],0,1,1.0,user_stop,29.5,0.019473999999999998,0.0095395,34,5
+[service_issue]airplane_mode_on|contract_end_suspension|lock_sim_card_pin[PERSONA:Hard],0,1,1.0,user_stop,24.4,0.0172867,0.0071615,28,5
+[service_issue]break_apn_settings|contract_end_suspension[PERSONA:Easy],0,1,1.0,user_stop,54.2,0.0604953,0.012762050000000002,44,8
+[service_issue]airplane_mode_on|contract_end_suspension[PERSONA:Easy],0,1,1.0,user_stop,55.0,0.0563647,0.012187650000000003,46,9
+[service_issue]break_apn_settings|contract_end_suspension|unseat_sim_card[PERSONA:None],0,1,1.0,user_stop,18.0,0.0164693,0.0066708,20,6
+[service_issue]contract_end_suspension|lock_sim_card_pin|unseat_sim_card[PERSONA:Easy],0,1,1.0,user_stop,32.1,0.027803900000000003,0.0075434000000000005,30,6
+[service_issue]airplane_mode_on|break_apn_settings|contract_end_suspension[PERSONA:Easy],0,1,1.0,user_stop,60.8,0.06446665,0.017160400000000003,54,8

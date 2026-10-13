@@ -1,0 +1,7 @@
+task_id,trial,passed,reward,termination,duration_s,agent_cost,user_cost,messages,tool_calls
+[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:goes_silent],0,0,0.0,user_stop,36.3,0.030300700000000003,0.013473599999999999,37,5
+[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:misunderstands],0,0,0.0,user_stop,46.3,0.032453449999999995,0.0175906,36,3
+[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:contradicts],0,0,0.0,user_stop,59.8,0.035685699999999994,0.026761950000000003,64,4
+[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:goes_silent],0,0,0.0,user_stop,25.0,0.022570500000000004,0.0150762,30,8
+[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:contradicts],0,0,0.0,user_stop,48.8,0.026311350000000004,0.02138495,48,3
+[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:misunderstands],0,0,0.0,max_steps,160.7,0.15777589999999997,0.10888594999999995,201,2
