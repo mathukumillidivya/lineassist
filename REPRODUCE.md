@@ -33,3 +33,16 @@ cd scripts && python compare.py ../results/runs/<standard run> ../results/runs/<
 ```
 
 The simulated customer is itself a model, so a fresh run lands close to, not exactly on, the published figures.
+
+## Checks added after the test
+
+These came after the frozen evaluation and do not change its numbers. In GitHub: Actions > extra-evals (needs the
+`ANTHROPIC_API_KEY` secret, about $1.50). It runs the 8 fresh contract-end calls for `lineassist` and `lineassist_v2`
+and the difficult-customer task set (`lineassist/difficult.py`) for `lineassist_v2` and the standard agent, then:
+
+```bash
+python scripts/analyze_extra.py \
+  --contract lineassist=results/runs/fresh-contract-lineassist lineassist_v2=results/runs/fresh-contract-lineassist_v2 \
+  --difficult lineassist_v2=results/runs/difficult-lineassist_v2 standard=results/runs/difficult-baseline \
+  --out results/extra_evals.json      # re-scores the saved conversations, no API key
+```
