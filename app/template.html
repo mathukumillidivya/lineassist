@@ -527,7 +527,7 @@ footer { background: var(--ink); color: #9C95BA; font-size: 13.5px; padding: 28p
       <li><b>The customer is simulated.</b> In the test it always has its phone, always cooperates in the end, and never misreads a screen. The difficult-customer probe above is small, and the simulator did not always act out its script.</li>
       <li><b>Not comparable to the public leaderboard.</b> Both agents talked to a lower-cost customer simulator than published results use. Only the comparison between the two agents holds.</li>
       <li><b>One model.</b> Every call used Claude Haiku 4.5. A stronger model would start from a higher baseline.</li>
-      <li><b>The four layers are not separated.</b> They were added one after another and never removed one at a time, so the share each contributes is not isolated.</li>
+      <li><b>The layers are measured only roughly.</b> Each was removed in turn on the 7 hardest calls, one attempt each (above). No removal fell below 5 of 7, so the gain comes from the layers together, but one call of difference is noise.</li>
     </ul>
   </section>
 </div></main>
@@ -790,7 +790,26 @@ const usd = v => "$" + v.toFixed(3);
   <ul class="plain" style="margin-top:10px">
     <li><b>Read this as “not derailed”, not as “handles confusion”.</b> The simulated customer acted out its script in the standard agent's calls (wrong screens, wrong first answers) but hardly at all in LineAssist's, whose instructions name the exact phone action and leave little room to misread. The standard agent solves one of these calls with an ordinary customer and fails the other.</li>
     <li><b>When the customer went silent,</b> both agents waited and asked again, made no change to the account, and never said the problem was fixed. In LineAssist's two calls the silence came after the faults were already fixed, so it was not tested at the hardest moment.</li>
-    <li><b>No unnecessary hand-offs from LineAssist</b> in these calls, against ${tr(D.standard)} from the standard agent, none of them needed.</li></ul>`; })();
+    <li><b>No unnecessary hand-offs from LineAssist</b> in these calls, against ${tr(D.standard)} from the standard agent, none of them needed.</li></ul>
+  ${X.scripted_customers ? scriptedHtml(X.scripted_customers) : ""}${X.ablation ? ablationHtml(X.ablation) : ""}`; })();
+function scriptedHtml(S) {
+  const c = (x, k) => { const b = x.by_customer[k]; return k === "silent_mid_fix" ? `waited; ${b.account_changes_while_silent ? b.account_changes_while_silent + " account change(s)" : "no account change"}; ${b.claimed_fixed_while_silent ? "claimed fixed" : "never said it was fixed"}` : `${b.passed} of ${b.conversations} solved${b.transferred ? `, ${b.transferred} transfer` : ""}`; };
+  return `<h4 style="margin:18px 0 6px">Scripted difficult customers</h4>
+  <p>The probe above left the behaviour to the simulator, which hardly acted it out against LineAssist. Here code replaces the customer's reply at fixed points, so both agents meet the same mistakes: two misread instructions, a false answer, and silence that starts before anything is fixed.</p>
+  <div style="overflow-x:auto"><table><thead><tr><th></th><th>Misreads twice</th><th>False answer</th><th>Silent before the fix</th></tr></thead><tbody>
+  <tr><td>Standard agent</td><td>${c(S.standard, "misunderstands")}</td><td>${c(S.standard, "contradicts")}</td><td>${c(S.standard, "silent_mid_fix")}</td></tr>
+  <tr><td><b>LineAssist</b></td><td><b>${c(S.lineassist_v2, "misunderstands")}</b></td><td><b>${c(S.lineassist_v2, "contradicts")}</b></td><td><b>${c(S.lineassist_v2, "silent_mid_fix")}</b></td></tr></tbody></table></div>
+  <p>The false answer fired in one call per agent (in the other, the agent asked no question at that point). Two calls per customer: read it as behaviour, not a rate.</p>`;
+}
+function ablationHtml(A) {
+  const names = [["standard (test run)", "Standard agent (test run, 3 attempts)"], ["lineassist (full, test run)", "LineAssist, all layers (test run, 3 attempts)"],
+    ["no_guard", "without the hand-off guard"], ["no_line_check", "without the line check"], ["no_case_notes", "without the case notes"], ["no_playbook", "without the playbook"]];
+  return `<h4 style="margin:18px 0 6px">Ablation: each layer removed in turn</h4>
+  <p>The ${A.tasks} held-out calls with the most faults, one attempt each.</p>
+  <div style="overflow-x:auto"><table><thead><tr><th></th><th>Solved</th><th>Unneeded hand-offs</th></tr></thead><tbody>
+  ${names.filter(([k]) => A[k]).map(([k, t]) => `<tr><td>${t}</td><td>${A[k].solved} of ${A[k].conversations}</td><td>${A[k].unneeded_transfers}</td></tr>`).join("")}</tbody></table></div>
+  <p>The playbook matters most; the line check made no difference on these calls. No single removal comes near the standard agent, so the gain comes from the layers together. One call of difference is noise at this size.</p>`;
+}
 $("#numbers").innerHTML = `<thead><tr><th></th><th>STANDARD</th><th>LINEASSIST</th></tr></thead><tbody>` + [
   ["Attempts solved", `${bp} of ${bn}`, `${op} of ${on}`], ["Calls solved on all three attempts", `${all3("base")} of 40`, `${all3("ours")} of 40`],
   ["Transferred while a fix was available", count("base", "handoff"), count("ours", "handoff")],

@@ -163,7 +163,7 @@ def main() -> None:
     data = {"tasks": ordered, "comparison": json.loads((ROOT / "results/test_comparison.json").read_text())}
     extra = ROOT / "results/extra_evals.json"
     if extra.exists():  # evaluations added after the held-out test, reported separately
-        data["extra"] = {sec: {k: {kk: vv for kk, vv in v.items() if kk != "rows"} for k, v in d.items()}
+        data["extra"] = {sec: {k: ({kk: vv for kk, vv in v.items() if kk != "rows"} if isinstance(v, dict) else v) for k, v in d.items()}
                          for sec, d in json.loads(extra.read_text()).items()}
     html = (ROOT / "app/template.html").read_text().replace("/*DATA*/null", json.dumps(data, separators=(",", ":")).replace("</", "<\\/"))
     # Version the script URL so a browser never pairs a new page with an old cached live.js.

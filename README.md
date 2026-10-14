@@ -135,12 +135,44 @@ silent after two instructions. One attempt each, 12 calls.
   of them needed. With the 8 fresh contract calls, the agent with the policy check transferred every time a transfer
   was required and never when it was not.
 
+**Ablation: each layer removed in turn** (the 7 held-out calls with the most faults, one attempt each; the full
+agent's and the standard agent's figures are their frozen test runs on the same 7 calls, three attempts each).
+
+| | Solved | Unneeded hand-offs |
+|---|---|---|
+| Standard agent (test run) | 0 of 21 | 14 |
+| **LineAssist, all layers (test run)** | **21 of 21** | **0** |
+| without the hand-off guard | 6 of 7 | 1 |
+| without the line check | 7 of 7 | 0 |
+| without the case notes | 6 of 7 | 0 |
+| without the playbook | 5 of 7 | 2 |
+
+The playbook matters most; the line check made no difference on these calls (it guards against acting on the wrong
+line, which these calls rarely tempt). No single removal brings the agent near the standard agent, so the gain comes
+from the layers together. Seven calls and one attempt each: a one-call difference is within noise. Cost: $2.87.
+
+**Scripted difficult customers** (`telecom_scripted`, `--user scripted_user` in [lineassist/difficult.py](lineassist/difficult.py)).
+The first probe left the difficult behaviour to the simulator, which hardly acted it out against LineAssist. Here code
+replaces the customer's reply at fixed points, so both agents meet the same mistakes: two misread instructions, a false
+answer ("I already restarted the phone, and I'm not travelling"), and silence that starts before anything is fixed.
+
+| Same 2 calls per customer | Misreads twice | False answer | Silent before the fix |
+|---|---|---|---|
+| Standard agent | 1 of 2 solved, 1 transfer | 1 of 2 solved, 1 transfer | waited; no account change; no claim it was fixed |
+| **LineAssist** | **2 of 2 solved** | **2 of 2 solved** | **waited; no account change; no claim it was fixed** |
+
+The misreads were delivered in all four of each agent's calls; the false answer fired in one call each (in the other,
+the agent never asked a question at the scripted point). After the false answer, LineAssist kept to the account facts
+and solved the call; the standard agent misread which line was the customer's and transferred. A silent call cannot be
+solved, so what matters is the behaviour: neither agent changed the account or said the problem was fixed while nobody
+answered, and LineAssist asked before sending a payment request it had no consent for. Cost: $0.35.
+
 ## What this does not show
 
-- **The hand-off guard has not earned its place.** It added one task in development, which is
-  within run-to-run noise. Guard interventions are not logged in the saved results, so I
-  cannot say how often it fired on the test split. The layers were added cumulatively and not
-  removed one at a time, so the contribution of each is not isolated.
+- **No single layer carries the result.** The ablation below removed each layer in turn on the
+  7 hardest calls, one attempt each: no removal dropped below 5 of 7, while the standard agent
+  solved none of those calls. With 7 calls, a difference of one call is noise, so the share each
+  layer contributes is still not measured precisely.
 - **Held-out means new combinations, not new problems.** Test tasks combine the same fault
   types as development tasks in different sets, on the same customer account. The result says
   the agent handles unseen combinations of known faults. It says nothing about fault types
