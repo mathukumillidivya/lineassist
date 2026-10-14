@@ -109,7 +109,8 @@ def ablation(runs: dict) -> dict:
         parts = [r for r in run.split(",") if Path(r, "results.json.gz").exists()]  # several runs of one agent are pooled
         if not parts:
             continue
-        ss = [s for r in parts for s in sims(r) if s["task_id"] in tasks]
+        # conversations the API refused (for example when credit ran out) are not attempts; leave them out
+        ss = [s for r in parts for s in sims(r) if s["task_id"] in tasks and s.get("termination_reason") != "infrastructure_error"]
         ok = sum(s["reward_info"]["reward"] >= 1 - 1e-6 for s in ss)
         unneeded = sum(transferred(s) and not any(a["action"]["name"] == "transfer_to_human_agents"
                                                    for a in (s["reward_info"].get("action_checks") or [])) for s in ss)

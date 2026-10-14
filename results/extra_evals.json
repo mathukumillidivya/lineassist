@@ -479,11 +479,11 @@
    "cost": 1.7442
   },
   "no_guard": {
-   "conversations": 7,
-   "solved": 6,
-   "rate": 0.857,
-   "unneeded_transfers": 1,
-   "cost": 0.6438
+   "conversations": 19,
+   "solved": 16,
+   "rate": 0.842,
+   "unneeded_transfers": 3,
+   "cost": 1.6431
   },
   "no_line_check": {
    "conversations": 7,
