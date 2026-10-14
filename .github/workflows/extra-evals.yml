@@ -6,6 +6,9 @@ on:
     inputs:
       parts: {description: "any of: contract difficult scripted ablation", default: "scripted ablation"}
       model: {default: "anthropic/claude-haiku-4-5-20251001"}
+      ablation_trials: {description: "attempts per call for the ablation", default: "1"}
+      ablation_suffix: {description: "run-id suffix for extra ablation attempts (e.g. -t2)", default: ""}
+      seed: {default: "300"}
 permissions:
   contents: write
 env:
@@ -44,7 +47,7 @@ jobs:
           run() {  # run_id agent extra-args...
             id=$1; agent=$2; shift 2
             uv run python ../scripts/run.py run --domain telecom --agent "$agent" \
-              --agent-llm "${{ inputs.model }}" --user-llm "${{ inputs.model }}" --num-trials 1 --seed 300 \
+              --agent-llm "${{ inputs.model }}" --user-llm "${{ inputs.model }}" --num-trials "${TRIALS:-1}" --seed "${{ inputs.seed }}" \
               --max-concurrency 4 --timeout 1200 --agent-llm-args "$ARGS" --user-llm-args "$ARGS" --save-to "$id" "$@" || true
             src="data/simulations/$id/results.json"; out="../results/runs/$id"
             if [ -f "$src" ]; then python ../scripts/summarize.py "$src" "$out" | head -20; gzip -9 -c "$src" > "$out/results.json.gz"; fi
@@ -63,7 +66,7 @@ jobs:
           if [[ "${{ inputs.parts }}" == *ablation* ]]; then
             mapfile -t ABL < ../results/ablation_tasks.txt
             for a in lineassist_no_guard lineassist_no_line_check lineassist_no_case_notes lineassist_no_playbook; do
-              run ablation-$a $a --task-split-name test --task-ids "${ABL[@]}"
+              TRIALS="${{ inputs.ablation_trials }}" run ablation-$a${{ inputs.ablation_suffix }} $a --task-split-name test --task-ids "${ABL[@]}"
             done
           fi
       - name: Score and save
@@ -73,8 +76,10 @@ jobs:
             --contract lineassist=results/runs/fresh-contract-lineassist lineassist_v2=results/runs/fresh-contract-lineassist_v2 \
             --difficult lineassist_v2=results/runs/difficult-lineassist_v2 standard=results/runs/difficult-baseline \
             --scripted lineassist_v2=results/runs/scripted-lineassist_v2 standard=results/runs/scripted-baseline \
-            --ablation no_guard=results/runs/ablation-lineassist_no_guard no_line_check=results/runs/ablation-lineassist_no_line_check \
-                       no_case_notes=results/runs/ablation-lineassist_no_case_notes no_playbook=results/runs/ablation-lineassist_no_playbook \
+            --ablation no_guard=results/runs/ablation-lineassist_no_guard,results/runs/ablation-lineassist_no_guard-t2 \
+                       no_line_check=results/runs/ablation-lineassist_no_line_check,results/runs/ablation-lineassist_no_line_check-t2 \
+                       no_case_notes=results/runs/ablation-lineassist_no_case_notes,results/runs/ablation-lineassist_no_case_notes-t2 \
+                       no_playbook=results/runs/ablation-lineassist_no_playbook,results/runs/ablation-lineassist_no_playbook-t2 \
             --out results/extra_evals.json || true
           git config user.name "Divya Sri"
           git config user.email "hellosweety789@gmail.com"

@@ -106,9 +106,10 @@ def ablation(runs: dict) -> dict:
     out = {"tasks": len(tasks)}
     for name, run in {"lineassist (full, test run)": "results/runs/test-lineassist",
                       "standard (test run)": "results/runs/test-baseline", **runs}.items():
-        if not Path(run, "results.json.gz").exists():
+        parts = [r for r in run.split(",") if Path(r, "results.json.gz").exists()]  # several runs of one agent are pooled
+        if not parts:
             continue
-        ss = [s for s in sims(run) if s["task_id"] in tasks]
+        ss = [s for r in parts for s in sims(r) if s["task_id"] in tasks]
         ok = sum(s["reward_info"]["reward"] >= 1 - 1e-6 for s in ss)
         unneeded = sum(transferred(s) and not any(a["action"]["name"] == "transfer_to_human_agents"
                                                    for a in (s["reward_info"].get("action_checks") or [])) for s in ss)
