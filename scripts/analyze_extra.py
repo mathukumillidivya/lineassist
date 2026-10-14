@@ -22,7 +22,7 @@ import re
 from pathlib import Path
 
 WRITE = {"suspend_line", "resume_line", "send_payment_request", "enable_roaming", "disable_roaming", "refuel_data"}
-FIXED = re.compile(r"\b(fixed|resolved|working (again|now)|should (now )?be working|all set|back (online|up))\b", re.I)
+FIXED = re.compile(r"\b(is|are|has been|have been|should now be|is now|now) (fixed|resolved|working|restored)\b|\byou'?re all set\b", re.I)  # a claim, not a promise
 
 
 def sims(run: str) -> list[dict]:
