@@ -150,7 +150,7 @@
      "transferred": 0,
      "went_silent": 2,
      "account_changes_while_silent": 0,
-     "claimed_fixed_while_silent": 0
+     "claimed_fixed_while_silent": 1
     }
    },
    "rows": [
@@ -188,7 +188,7 @@
      "account_changes_while_silent": [],
      "transferred_while_silent": false,
      "agent_messages_while_silent": 3,
-     "claimed_fixed_while_silent": false,
+     "claimed_fixed_while_silent": true,
      "last_agent_message": "John, I'm still standing by to help. Whenever you're ready, please run the **run_speed_test** on your phone and let me know what the results show. I'll be here!"
     },
     {
@@ -463,20 +463,48 @@
   }
  },
  "ablation": {
-  "tasks": 10,
+  "tasks": 7,
   "lineassist (full, test run)": {
-   "conversations": 30,
-   "solved": 30,
+   "conversations": 21,
+   "solved": 21,
    "rate": 1.0,
    "unneeded_transfers": 0,
-   "cost": 2.3442
+   "cost": 1.771
   },
   "standard (test run)": {
-   "conversations": 30,
-   "solved": 3,
-   "rate": 0.1,
-   "unneeded_transfers": 20,
-   "cost": 2.3176
+   "conversations": 21,
+   "solved": 0,
+   "rate": 0.0,
+   "unneeded_transfers": 14,
+   "cost": 1.7442
+  },
+  "no_guard": {
+   "conversations": 7,
+   "solved": 6,
+   "rate": 0.857,
+   "unneeded_transfers": 1,
+   "cost": 0.6438
+  },
+  "no_line_check": {
+   "conversations": 7,
+   "solved": 7,
+   "rate": 1.0,
+   "unneeded_transfers": 0,
+   "cost": 0.5528
+  },
+  "no_case_notes": {
+   "conversations": 7,
+   "solved": 6,
+   "rate": 0.857,
+   "unneeded_transfers": 0,
+   "cost": 0.7043
+  },
+  "no_playbook": {
+   "conversations": 7,
+   "solved": 5,
+   "rate": 0.714,
+   "unneeded_transfers": 2,
+   "cost": 0.9682
   }
  }
 }
