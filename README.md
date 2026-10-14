@@ -142,7 +142,7 @@ agent's and the standard agent's figures are their frozen test runs on the same 
 |---|---|---|
 | Standard agent (test run) | 0 of 21 | 14 |
 | **LineAssist, all layers (test run)** | **21 of 21** | **0** |
-| without the hand-off guard | 6 of 7 | 1 |
+| without the hand-off guard | 16 of 19 (6 of 7, then 10 of 12 in a second run) | see results/extra_evals.json |
 | without the line check | 7 of 7 | 0 |
 | without the case notes | 6 of 7 | 0 |
 | without the playbook | 5 of 7 | 2 |
