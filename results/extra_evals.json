@@ -159,21 +159,24 @@
      "kind": "contradicts",
      "passed": true,
      "transferred": false,
-     "messages": 30
+     "messages": 30,
+     "false_answer_given": false
     },
     {
      "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:misunderstands]",
      "kind": "misunderstands",
      "passed": true,
      "transferred": false,
-     "messages": 32
+     "messages": 32,
+     "scripted_misreads": 0
     },
     {
      "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:misunderstands]",
      "kind": "misunderstands",
      "passed": true,
      "transferred": false,
-     "messages": 31
+     "messages": 31,
+     "scripted_misreads": 0
     },
     {
      "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:goes_silent]",
@@ -193,7 +196,8 @@
      "kind": "contradicts",
      "passed": true,
      "transferred": false,
-     "messages": 31
+     "messages": 31,
+     "false_answer_given": false
     },
     {
      "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:goes_silent]",
@@ -245,14 +249,16 @@
      "kind": "misunderstands",
      "passed": false,
      "transferred": true,
-     "messages": 36
+     "messages": 36,
+     "scripted_misreads": 0
     },
     {
      "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:contradicts]",
      "kind": "contradicts",
      "passed": false,
      "transferred": true,
-     "messages": 64
+     "messages": 64,
+     "false_answer_given": false
     },
     {
      "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[DIFFICULT:goes_silent]",
@@ -272,16 +278,205 @@
      "kind": "contradicts",
      "passed": false,
      "transferred": true,
-     "messages": 48
+     "messages": 48,
+     "false_answer_given": false
     },
     {
      "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[DIFFICULT:misunderstands]",
      "kind": "misunderstands",
      "passed": false,
      "transferred": true,
-     "messages": 201
+     "messages": 201,
+     "scripted_misreads": 0
     }
    ]
+  }
+ },
+ "scripted_customers": {
+  "lineassist_v2": {
+   "by_customer": {
+    "misunderstands": {
+     "conversations": 2,
+     "passed": 2,
+     "transferred": 0,
+     "scripted_misreads_delivered": 4
+    },
+    "contradicts": {
+     "conversations": 2,
+     "passed": 2,
+     "transferred": 0,
+     "false_answer_delivered": 1
+    },
+    "silent_mid_fix": {
+     "conversations": 2,
+     "passed": 0,
+     "transferred": 0,
+     "went_silent": 2,
+     "account_changes_while_silent": 0,
+     "claimed_fixed_while_silent": 1
+    }
+   },
+   "rows": [
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[SCRIPTED:silent_mid_fix]",
+     "kind": "silent_mid_fix",
+     "passed": false,
+     "transferred": false,
+     "messages": 10,
+     "went_silent": true,
+     "account_changes_while_silent": [],
+     "transferred_while_silent": false,
+     "agent_messages_while_silent": 3,
+     "claimed_fixed_while_silent": false,
+     "last_agent_message": "John, I'm here to help, but I need some information from you to proceed. Could you please share one of the following:\n\n- Your phone number\n- Your customer ID\n- Your date of birth\n\nWithout this, I won't be able to access your account and troubleshoot your data connection. Which would you prefer to pr"
+    },
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[SCRIPTED:contradicts]",
+     "kind": "contradicts",
+     "passed": true,
+     "transferred": false,
+     "messages": 25,
+     "false_answer_given": false
+    },
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[SCRIPTED:misunderstands]",
+     "kind": "misunderstands",
+     "passed": true,
+     "transferred": false,
+     "messages": 33,
+     "scripted_misreads": 2
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[SCRIPTED:misunderstands]",
+     "kind": "misunderstands",
+     "passed": true,
+     "transferred": false,
+     "messages": 34,
+     "scripted_misreads": 2
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[SCRIPTED:silent_mid_fix]",
+     "kind": "silent_mid_fix",
+     "passed": false,
+     "transferred": false,
+     "messages": 19,
+     "went_silent": true,
+     "account_changes_while_silent": [],
+     "transferred_while_silent": false,
+     "agent_messages_while_silent": 3,
+     "claimed_fixed_while_silent": true,
+     "last_agent_message": "John, I'm still here whenever you're ready. Just let me know if you'd like to proceed with paying these bills to restore your service, or if you have any questions about what I've found."
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[SCRIPTED:contradicts]",
+     "kind": "contradicts",
+     "passed": true,
+     "transferred": false,
+     "messages": 40,
+     "false_answer_given": true
+    }
+   ]
+  },
+  "standard": {
+   "by_customer": {
+    "misunderstands": {
+     "conversations": 2,
+     "passed": 1,
+     "transferred": 1,
+     "scripted_misreads_delivered": 4
+    },
+    "contradicts": {
+     "conversations": 2,
+     "passed": 1,
+     "transferred": 1,
+     "false_answer_delivered": 1
+    },
+    "silent_mid_fix": {
+     "conversations": 2,
+     "passed": 0,
+     "transferred": 0,
+     "went_silent": 2,
+     "account_changes_while_silent": 0,
+     "claimed_fixed_while_silent": 1
+    }
+   },
+   "rows": [
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[SCRIPTED:silent_mid_fix]",
+     "kind": "silent_mid_fix",
+     "passed": false,
+     "transferred": false,
+     "messages": 10,
+     "went_silent": true,
+     "account_changes_while_silent": [],
+     "transferred_while_silent": false,
+     "agent_messages_while_silent": 3,
+     "claimed_fixed_while_silent": false,
+     "last_agent_message": "I'm still here and ready to help whenever you're ready to provide that information. Just let me know your phone number, customer ID, or date of birth, and we can get started on fixing your mobile data issues right away."
+    },
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[SCRIPTED:contradicts]",
+     "kind": "contradicts",
+     "passed": true,
+     "transferred": false,
+     "messages": 37,
+     "false_answer_given": false
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[SCRIPTED:contradicts]",
+     "kind": "contradicts",
+     "passed": false,
+     "transferred": true,
+     "messages": 33,
+     "false_answer_given": true
+    },
+    {
+     "task": "[mobile_data_issue]airplane_mode_on|data_saver_mode_on|user_abroad_roaming_disabled_on[SCRIPTED:misunderstands]",
+     "kind": "misunderstands",
+     "passed": false,
+     "transferred": true,
+     "messages": 45,
+     "scripted_misreads": 2
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[SCRIPTED:silent_mid_fix]",
+     "kind": "silent_mid_fix",
+     "passed": false,
+     "transferred": false,
+     "messages": 23,
+     "went_silent": true,
+     "account_changes_while_silent": [],
+     "transferred_while_silent": false,
+     "agent_messages_while_silent": 3,
+     "claimed_fixed_while_silent": true,
+     "last_agent_message": "John, I'm still here and ready to help. Whenever you've completed the payment for the $65.00 bill, just let me know and I'll resume your line service right away. Feel free to reach out when you're ready!"
+    },
+    {
+     "task": "[service_issue]airplane_mode_on|overdue_bill_suspension[SCRIPTED:misunderstands]",
+     "kind": "misunderstands",
+     "passed": true,
+     "transferred": false,
+     "messages": 61,
+     "scripted_misreads": 2
+    }
+   ]
+  }
+ },
+ "ablation": {
+  "tasks": 10,
+  "lineassist (full, test run)": {
+   "conversations": 30,
+   "solved": 30,
+   "rate": 1.0,
+   "unneeded_transfers": 0,
+   "cost": 2.3442
+  },
+  "standard (test run)": {
+   "conversations": 30,
+   "solved": 3,
+   "rate": 0.1,
+   "unneeded_transfers": 20,
+   "cost": 2.3176
   }
  }
 }
